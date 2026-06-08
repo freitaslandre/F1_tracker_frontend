@@ -20,7 +20,8 @@ export class F1Service {
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
-    return this.http.get<any>(`${API_URL}/${season}/results.json`).pipe(
+    // Use the "races" endpoint to get the full season schedule (not only completed results)
+    return this.http.get<any>(`${API_URL}/${season}/races.json`).pipe(
       map((res) => res?.MRData?.RaceTable?.Races ?? []),
     );
   }

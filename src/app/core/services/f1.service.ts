@@ -51,15 +51,19 @@ export class F1Service {
     return this.fetchRaces(season).pipe(
       switchMap((races) => {
         const found = races.find((race) => race.round === round);
-        if (found && Array.isArray((found as any).Results) && (found as any).Results.length > 0) {
-          return of(found as JolpicaRaceDetail);
-        }
+        if (!found) return of(undefined);
 
-        // If the schedule doesn't include results, fetch the results endpoint for the season
+        // Try to enrich the calendar entry with results from results.json, but
+        // return the calendar entry even if results are unavailable.
         return this.http.get<any>(`${API_URL}/${season}/results.json`).pipe(
           map((res) => res?.MRData?.RaceTable?.Races ?? []),
-          map((resultsRaces: any[]) => resultsRaces.find((r) => r.round === round)),
-          catchError(() => of(undefined)),
+          map((resultsRaces: any[]) => {
+            const resRace = resultsRaces.find((r) => r.round === round);
+            return resRace && resRace.Results && resRace.Results.length > 0
+              ? ({ ...found, Results: resRace.Results } as JolpicaRaceDetail)
+              : (found as JolpicaRaceDetail);
+          }),
+          catchError(() => of(found as JolpicaRaceDetail)),
         );
       }),
     );

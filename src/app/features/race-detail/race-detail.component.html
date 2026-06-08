@@ -30,7 +30,11 @@
   <section class="panel">
     <div class="section-title">
       <h2>Classificacao final</h2>
-      <span>{{ race.Results.length }} pilotos mockados</span>
+      @if (race.Results && race.Results.length > 0) {
+        <span>{{ race.Results.length }} pilotos</span>
+      } @else {
+        <span>Resultados não disponíveis</span>
+      }
     </div>
 
     <div class="results-table">

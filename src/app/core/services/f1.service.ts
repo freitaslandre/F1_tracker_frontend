@@ -1,15 +1,22 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { MOCK_RACES } from '../data/mock-f1.data';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, map, shareReplay } from 'rxjs';
 import { FavoriteCircuit, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
 
 const FAVORITES_KEY = 'f1rm_favorite_circuits';
 const VOTES_KEY = 'f1rm_driver_votes';
+const API_URL = 'http://localhost:3000/api';
 
 @Injectable({
   providedIn: 'root',
 })
 export class F1Service {
+  private readonly http = inject(HttpClient);
+  private readonly races$ = this.http
+    .get<JolpicaRaceDetail[]>(`${API_URL}/f1/races`, {
+      params: { season: String(new Date().getUTCFullYear()) },
+    })
+    .pipe(shareReplay({ bufferSize: 1, refCount: true }));
   private readonly favoriteCircuits = signal<FavoriteCircuit[]>(this.readJson(FAVORITES_KEY, []));
   private readonly driverVotes = signal<Record<string, string>>(this.readJson(VOTES_KEY, {}));
 
@@ -18,8 +25,9 @@ export class F1Service {
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
   getCurrentSeasonRaces(): Observable<JolpicaRaceSummary[]> {
-    return of(
-      MOCK_RACES.map((race) => ({
+    return this.races$.pipe(
+      map((races) =>
+        races.map((race) => ({
         season: race.season,
         round: race.round,
         url: race.url,
@@ -27,12 +35,15 @@ export class F1Service {
         Circuit: race.Circuit,
         date: race.date,
         time: race.time,
-      })),
+        })),
+      ),
     );
   }
 
   getRaceDetail(round: string): Observable<JolpicaRaceDetail | undefined> {
-    return of(MOCK_RACES.find((race) => race.round === round));
+    return this.races$.pipe(
+      map((races) => races.find((race) => race.round === round)),
+    );
   }
 
   toggleFavoriteCircuit(race: JolpicaRaceDetail): void {

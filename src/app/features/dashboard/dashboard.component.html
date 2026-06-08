@@ -46,12 +46,16 @@
       <article class="race-card">
         @if (isRaceCompleted(race)) {
           <span class="status-badge completed">Concluída</span>
+        } @else {
+          <span class="status-badge pending">Ainda não realizada</span>
         }
         <div>
           <p class="round">Round {{ race.round }}</p>
           <h2>{{ race.raceName }}</h2>
           @if (isRaceCompleted(race)) {
             <small class="completed-label">Concluída — resultados disponíveis</small>
+          } @else {
+            <small class="pending-label">Ainda não realizada</small>
           }
           <p>{{ race.Circuit.circuitName }}</p>
         </div>

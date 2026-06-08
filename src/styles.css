@@ -352,6 +352,20 @@ input {
   font-size: 0.9rem;
 }
 
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.18);
+}
+
+.pending-label {
+  display: inline-block;
+  margin-top: 6px;
+  color: #ffd8a8;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 .race-card p {
   margin: 0;
   color: var(--muted);

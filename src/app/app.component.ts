@@ -1,12 +1,19 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from './core/services/auth.service';
 
 @Component({
     selector: 'app-root',
-    imports: [RouterOutlet],
+    imports: [RouterLink, RouterLinkActive, RouterOutlet],
     templateUrl: './app.component.html',
     styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'webtech-final-project-frontend-template';
+  protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  protected logout(): void {
+    this.auth.logout();
+    void this.router.navigateByUrl('/auth');
+  }
 }

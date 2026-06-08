@@ -1,0 +1,32 @@
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">Temporada 2026</p>
+    <h1>Dashboard de corridas</h1>
+  </div>
+  <span class="stat-pill">{{ races().length }} Grandes Premios</span>
+</section>
+
+<section class="race-grid">
+  @for (race of races(); track race.round) {
+    <article class="race-card">
+      <div>
+        <p class="round">Round {{ race.round }}</p>
+        <h2>{{ race.raceName }}</h2>
+        <p>{{ race.Circuit.circuitName }}</p>
+      </div>
+
+      <dl class="meta-list">
+        <div>
+          <dt>Data</dt>
+          <dd>{{ race.date | date: 'dd MMM yyyy' }}</dd>
+        </div>
+        <div>
+          <dt>Local</dt>
+          <dd>{{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</dd>
+        </div>
+      </dl>
+
+      <a class="primary-button compact" [routerLink]="['/races', race.round]">Ver detalhes</a>
+    </article>
+  }
+</section>

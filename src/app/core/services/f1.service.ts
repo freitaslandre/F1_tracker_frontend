@@ -1,0 +1,82 @@
+import { Injectable, computed, signal } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { MOCK_RACES } from '../data/mock-f1.data';
+import { FavoriteCircuit, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
+
+const FAVORITES_KEY = 'f1rm_favorite_circuits';
+const VOTES_KEY = 'f1rm_driver_votes';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class F1Service {
+  private readonly favoriteCircuits = signal<FavoriteCircuit[]>(this.readJson(FAVORITES_KEY, []));
+  private readonly driverVotes = signal<Record<string, string>>(this.readJson(VOTES_KEY, {}));
+
+  readonly favorites = this.favoriteCircuits.asReadonly();
+  readonly votes = this.driverVotes.asReadonly();
+  readonly favoriteCount = computed(() => this.favoriteCircuits().length);
+
+  getCurrentSeasonRaces(): Observable<JolpicaRaceSummary[]> {
+    return of(
+      MOCK_RACES.map((race) => ({
+        season: race.season,
+        round: race.round,
+        url: race.url,
+        raceName: race.raceName,
+        Circuit: race.Circuit,
+        date: race.date,
+        time: race.time,
+      })),
+    );
+  }
+
+  getRaceDetail(round: string): Observable<JolpicaRaceDetail | undefined> {
+    return of(MOCK_RACES.find((race) => race.round === round));
+  }
+
+  toggleFavoriteCircuit(race: JolpicaRaceDetail): void {
+    const favorite: FavoriteCircuit = {
+      circuitId: race.Circuit.circuitId,
+      circuitName: race.Circuit.circuitName,
+      country: race.Circuit.Location.country,
+      raceName: race.raceName,
+    };
+
+    const exists = this.favoriteCircuits().some((item) => item.circuitId === favorite.circuitId);
+    const next = exists
+      ? this.favoriteCircuits().filter((item) => item.circuitId !== favorite.circuitId)
+      : [...this.favoriteCircuits(), favorite];
+
+    this.favoriteCircuits.set(next);
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+  }
+
+  isFavorite(circuitId: string): boolean {
+    return this.favoriteCircuits().some((item) => item.circuitId === circuitId);
+  }
+
+  voteDriver(round: string, driverId: string): void {
+    const next = { ...this.driverVotes(), [round]: driverId };
+    this.driverVotes.set(next);
+    localStorage.setItem(VOTES_KEY, JSON.stringify(next));
+  }
+
+  selectedDriverForRound(round: string): string | undefined {
+    return this.driverVotes()[round];
+  }
+
+  private readJson<T>(key: string, fallback: T): T {
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      localStorage.removeItem(key);
+      return fallback;
+    }
+  }
+}

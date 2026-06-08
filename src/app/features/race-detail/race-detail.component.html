@@ -1,0 +1,75 @@
+@if (race(); as race) {
+  <section class="page-heading detail-heading">
+    <div>
+      <a class="text-link" routerLink="/dashboard">Voltar ao dashboard</a>
+      <p class="eyebrow">Round {{ race.round }} / {{ race.season }}</p>
+      <h1>{{ race.raceName }}</h1>
+      <p>{{ race.Circuit.circuitName }} · {{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</p>
+    </div>
+
+    <button class="secondary-button" type="button" (click)="toggleFavorite(race)">
+      {{ f1Service.isFavorite(race.Circuit.circuitId) ? 'Remover favorito' : 'Adicionar aos favoritos' }}
+    </button>
+  </section>
+
+  <section class="panel race-facts">
+    <div>
+      <span>Data</span>
+      <strong>{{ race.date | date: 'dd MMM yyyy' }}</strong>
+    </div>
+    <div>
+      <span>Hora UTC</span>
+      <strong>{{ race.time }}</strong>
+    </div>
+    <div>
+      <span>Voto atual</span>
+      <strong>{{ selectedDriverId() ?? 'Ainda sem voto' }}</strong>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-title">
+      <h2>Classificacao final</h2>
+      <span>{{ race.Results.length }} pilotos mockados</span>
+    </div>
+
+    <div class="results-table">
+      <div class="table-row table-head">
+        <span>Pos</span>
+        <span>Piloto</span>
+        <span>Equipa</span>
+        <span>Tempo</span>
+        <span>Pontos</span>
+        <span>Voto</span>
+      </div>
+
+      @for (result of race.Results; track result.Driver.driverId) {
+        <div class="table-row">
+          <span class="position">{{ result.position }}</span>
+          <span>
+            <strong>{{ result.Driver.givenName }} {{ result.Driver.familyName }}</strong>
+            <small>{{ result.Driver.code }} · Volta rapida {{ result.FastestLap?.Time?.time }}</small>
+          </span>
+          <span>{{ result.Constructor.name }}</span>
+          <span>{{ result.Time?.time ?? result.status }}</span>
+          <span>{{ result.points }}</span>
+          <span>
+            <button
+              class="vote-button"
+              type="button"
+              [class.active]="selectedDriverId() === result.Driver.driverId"
+              (click)="vote(race, result.Driver.driverId)"
+            >
+              {{ selectedDriverId() === result.Driver.driverId ? 'Escolhido' : 'Votar' }}
+            </button>
+          </span>
+        </div>
+      }
+    </div>
+  </section>
+} @else {
+  <section class="empty-state">
+    <h1>Corrida nao encontrada</h1>
+    <a class="primary-button compact" routerLink="/dashboard">Voltar ao dashboard</a>
+  </section>
+}

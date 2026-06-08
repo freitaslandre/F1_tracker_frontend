@@ -5,7 +5,7 @@ import { FavoriteCircuit, JolpicaRaceDetail, JolpicaRaceSummary } from '../model
 
 const FAVORITES_KEY = 'f1rm_favorite_circuits';
 const VOTES_KEY = 'f1rm_driver_votes';
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://api.jolpi.ca/ergast/f1';
 
 @Injectable({
   providedIn: 'root',
@@ -20,9 +20,9 @@ export class F1Service {
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
-    return this.http.get<JolpicaRaceDetail[]>(`${API_URL}/f1/races`, {
-      params: { season: String(season) },
-    });
+    return this.http.get<any>(`${API_URL}/${season}/results.json`).pipe(
+      map((res) => res?.MRData?.RaceTable?.Races ?? []),
+    );
   }
 
   getCurrentSeasonRaces(): Observable<JolpicaRaceSummary[]> {

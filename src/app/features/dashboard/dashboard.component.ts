@@ -69,4 +69,15 @@ export class DashboardComponent {
     this.historyMode.set(false);
     this.season.set(new Date().getUTCFullYear());
   }
+
+  protected isRaceCompleted(race: JolpicaRaceSummary): boolean {
+    try {
+      const date = race.date ?? '';
+      const time = race.time ?? '';
+      const dateTime = time ? new Date(`${date}T${time}`) : new Date(date);
+      return dateTime.getTime() <= Date.now();
+    } catch {
+      return false;
+    }
+  }
 }

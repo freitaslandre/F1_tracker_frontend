@@ -44,9 +44,15 @@
   <section class="race-grid">
     @for (race of races(); track race.season + '-' + race.round) {
       <article class="race-card">
+        @if (isRaceCompleted(race)) {
+          <span class="status-badge completed">Concluída</span>
+        }
         <div>
           <p class="round">Round {{ race.round }}</p>
           <h2>{{ race.raceName }}</h2>
+          @if (isRaceCompleted(race)) {
+            <small class="completed-label">Concluída — resultados disponíveis</small>
+          }
           <p>{{ race.Circuit.circuitName }}</p>
         </div>
 

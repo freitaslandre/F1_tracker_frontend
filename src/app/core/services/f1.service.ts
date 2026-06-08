@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, map, shareReplay } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { FavoriteCircuit, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
 
 const FAVORITES_KEY = 'f1rm_favorite_circuits';
@@ -12,11 +12,6 @@ const API_URL = 'http://localhost:3000/api';
 })
 export class F1Service {
   private readonly http = inject(HttpClient);
-  private readonly races$ = this.http
-    .get<JolpicaRaceDetail[]>(`${API_URL}/f1/races`, {
-      params: { season: String(new Date().getUTCFullYear()) },
-    })
-    .pipe(shareReplay({ bufferSize: 1, refCount: true }));
   private readonly favoriteCircuits = signal<FavoriteCircuit[]>(this.readJson(FAVORITES_KEY, []));
   private readonly driverVotes = signal<Record<string, string>>(this.readJson(VOTES_KEY, {}));
 
@@ -24,24 +19,34 @@ export class F1Service {
   readonly votes = this.driverVotes.asReadonly();
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
+  private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
+    return this.http.get<JolpicaRaceDetail[]>(`${API_URL}/f1/races`, {
+      params: { season: String(season) },
+    });
+  }
+
   getCurrentSeasonRaces(): Observable<JolpicaRaceSummary[]> {
-    return this.races$.pipe(
+    return this.getSeasonRaces(new Date().getUTCFullYear());
+  }
+
+  getSeasonRaces(season: number): Observable<JolpicaRaceSummary[]> {
+    return this.fetchRaces(season).pipe(
       map((races) =>
         races.map((race) => ({
-        season: race.season,
-        round: race.round,
-        url: race.url,
-        raceName: race.raceName,
-        Circuit: race.Circuit,
-        date: race.date,
-        time: race.time,
+          season: race.season,
+          round: race.round,
+          url: race.url,
+          raceName: race.raceName,
+          Circuit: race.Circuit,
+          date: race.date,
+          time: race.time,
         })),
       ),
     );
   }
 
-  getRaceDetail(round: string): Observable<JolpicaRaceDetail | undefined> {
-    return this.races$.pipe(
+  getRaceDetail(season: number, round: string): Observable<JolpicaRaceDetail | undefined> {
+    return this.fetchRaces(season).pipe(
       map((races) => races.find((race) => race.round === round)),
     );
   }

@@ -1,32 +1,61 @@
 <section class="page-heading">
   <div>
-    <p class="eyebrow">Temporada 2026</p>
+    <p class="eyebrow">Temporada {{ season() }}</p>
     <h1>Dashboard de corridas</h1>
   </div>
-  <span class="stat-pill">{{ races().length }} Grandes Premios</span>
+
+  <div class="heading-actions">
+    <label class="season-picker">
+      <span>Temporada</span>
+      <select [value]="season()" (change)="selectSeason($event)">
+        @for (year of seasons; track year) {
+          <option [value]="year">{{ year }}</option>
+        }
+      </select>
+    </label>
+
+    <span class="stat-pill">{{ races().length }} Grandes Prêmios</span>
+  </div>
 </section>
 
-<section class="race-grid">
-  @for (race of races(); track race.round) {
-    <article class="race-card">
-      <div>
-        <p class="round">Round {{ race.round }}</p>
-        <h2>{{ race.raceName }}</h2>
-        <p>{{ race.Circuit.circuitName }}</p>
-      </div>
-
-      <dl class="meta-list">
+@if (error()) {
+  <section class="empty-state compact-empty">
+    <h2>{{ error() }}</h2>
+    <p>Verifique se o servidor backend está rodando e se a temporada selecionada está disponível.</p>
+  </section>
+} @else if (isLoading()) {
+  <section class="empty-state compact-empty">
+    <h2>Carregando corridas...</h2>
+    <p>Aguarde enquanto buscamos os resultados da temporada {{ season() }}.</p>
+  </section>
+} @else if (races().length === 0) {
+  <section class="empty-state compact-empty">
+    <h2>Nenhuma corrida encontrada para {{ season() }}</h2>
+    <p>Tente outra temporada anterior ou avise se os dados não estiverem disponíveis.</p>
+  </section>
+} @else {
+  <section class="race-grid">
+    @for (race of races(); track race.round) {
+      <article class="race-card">
         <div>
-          <dt>Data</dt>
-          <dd>{{ race.date | date: 'dd MMM yyyy' }}</dd>
+          <p class="round">Round {{ race.round }}</p>
+          <h2>{{ race.raceName }}</h2>
+          <p>{{ race.Circuit.circuitName }}</p>
         </div>
-        <div>
-          <dt>Local</dt>
-          <dd>{{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</dd>
-        </div>
-      </dl>
 
-      <a class="primary-button compact" [routerLink]="['/races', race.round]">Ver detalhes</a>
-    </article>
-  }
-</section>
+        <dl class="meta-list">
+          <div>
+            <dt>Data</dt>
+            <dd>{{ race.date }}</dd>
+          </div>
+          <div>
+            <dt>Local</dt>
+            <dd>{{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</dd>
+          </div>
+        </dl>
+
+        <a class="primary-button compact" [routerLink]="['/races', season(), race.round]">Ver detalhes</a>
+      </article>
+    }
+  </section>
+}

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -7,18 +6,22 @@ import { JolpicaRaceDetail } from '../../core/models/f1.models';
 import { F1Service } from '../../core/services/f1.service';
 
 @Component({
+  standalone: true,
   selector: 'app-race-detail',
-  imports: [DatePipe, RouterLink],
+  imports: [RouterLink],
   templateUrl: './race-detail.component.html',
 })
 export class RaceDetailComponent {
   private readonly route = inject(ActivatedRoute);
   protected readonly f1Service = inject(F1Service);
 
-  protected readonly race = toSignal(
+  protected readonly race = toSignal<JolpicaRaceDetail | undefined>(
     this.route.paramMap.pipe(
-      map((params) => params.get('round') ?? '1'),
-      switchMap((round) => this.f1Service.getRaceDetail(round)),
+      map((params) => ({
+        season: Number(params.get('season') ?? String(new Date().getUTCFullYear())),
+        round: params.get('round') ?? '1',
+      })),
+      switchMap(({ season, round }) => this.f1Service.getRaceDetail(season, round)),
     ),
   );
 

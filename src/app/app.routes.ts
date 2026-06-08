@@ -14,7 +14,7 @@ export const routes: Routes = [
       import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
-    path: 'races/:round',
+    path: 'races/:season/:round',
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/race-detail/race-detail.component').then((m) => m.RaceDetailComponent),

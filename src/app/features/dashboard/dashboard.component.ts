@@ -12,11 +12,12 @@ import { JolpicaRaceSummary } from '../../core/models/f1.models';
 export class DashboardComponent {
   private readonly f1Service = inject(F1Service);
 
-  protected readonly seasons = Array.from({ length: 10 }, (_, index) => new Date().getUTCFullYear() - index);
+  protected readonly seasons = Array.from({ length: new Date().getUTCFullYear() - 1950 + 1 }, (_, i) => new Date().getUTCFullYear() - i).reverse().reverse();
   protected readonly season = signal<number>(new Date().getUTCFullYear());
   protected readonly races = signal<JolpicaRaceSummary[]>([]);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly historyMode = signal<boolean>(false);
 
   constructor() {
     effect((onCleanup) => {
@@ -58,7 +59,14 @@ export class DashboardComponent {
   }
 
   protected selectSeason(event: Event): void {
+    // switching season exits history mode
+    this.historyMode.set(false);
     const target = event.target as HTMLSelectElement;
     this.season.set(Number(target.value));
+  }
+
+  protected hideHistory(): void {
+    this.historyMode.set(false);
+    this.season.set(new Date().getUTCFullYear());
   }
 }

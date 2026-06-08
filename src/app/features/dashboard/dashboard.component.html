@@ -1,20 +1,26 @@
 <section class="page-heading">
   <div>
-    <p class="eyebrow">Temporada {{ season() }}</p>
-    <h1>Dashboard de corridas</h1>
+    @if (historyMode()) {
+      <p class="eyebrow">Histórico de corridas</p>
+      <h1>História completa</h1>
+    } @else {
+      <p class="eyebrow">Temporada {{ season() }}</p>
+      <h1>Dashboard de corridas</h1>
+    }
   </div>
 
   <div class="heading-actions">
     <label class="season-picker">
       <span>Temporada</span>
-      <select [value]="season()" (change)="selectSeason($event)">
+      <select [value]="season()" (change)="selectSeason($event)" [disabled]="historyMode()">
         @for (year of seasons; track year) {
           <option [value]="year">{{ year }}</option>
         }
       </select>
     </label>
 
-    <button class="secondary-button" (click)="showHistory()">Mostrar História</button>
+    <button class="secondary-button" *ngIf="!historyMode()" (click)="showHistory()">Mostrar História</button>
+    <button class="secondary-button" *ngIf="historyMode()" (click)="hideHistory()">Fechar História</button>
     <span class="stat-pill">{{ races().length }} Grandes Prêmios</span>
   </div>
 </section>
@@ -55,7 +61,7 @@
           </div>
         </dl>
 
-        <a class="primary-button compact" [routerLink]="['/races', season(), race.round]">Ver detalhes</a>
+        <a class="primary-button compact" [routerLink]="['/races', historyMode() ? race.season : season(), race.round]">Ver detalhes</a>
       </article>
     }
   </section>

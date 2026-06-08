@@ -40,6 +40,23 @@ export class DashboardComponent {
     });
   }
 
+  protected showHistory(): void {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    this.f1Service.getAllRacesHistory().subscribe({
+      next: (races) => {
+        this.races.set(races);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.error.set('Não foi possível carregar o histórico de corridas.');
+        this.races.set([]);
+        this.isLoading.set(false);
+      },
+    });
+  }
+
   protected selectSeason(event: Event): void {
     const target = event.target as HTMLSelectElement;
     this.season.set(Number(target.value));

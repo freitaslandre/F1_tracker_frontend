@@ -14,6 +14,7 @@
       </select>
     </label>
 
+    <button class="secondary-button" (click)="showHistory()">Mostrar História</button>
     <span class="stat-pill">{{ races().length }} Grandes Prêmios</span>
   </div>
 </section>
@@ -35,7 +36,7 @@
   </section>
 } @else {
   <section class="race-grid">
-    @for (race of races(); track race.round) {
+    @for (race of races(); track race.season + '-' + race.round) {
       <article class="race-card">
         <div>
           <p class="round">Round {{ race.round }}</p>

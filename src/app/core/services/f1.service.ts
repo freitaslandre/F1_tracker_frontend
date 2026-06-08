@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, from, of } from 'rxjs';
+import { map, concatMap, reduce, catchError, switchMap } from 'rxjs/operators';
 import { FavoriteCircuit, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
 
 const FAVORITES_KEY = 'f1rm_favorite_circuits';
@@ -48,7 +49,53 @@ export class F1Service {
 
   getRaceDetail(season: number, round: string): Observable<JolpicaRaceDetail | undefined> {
     return this.fetchRaces(season).pipe(
-      map((races) => races.find((race) => race.round === round)),
+      switchMap((races) => {
+        const found = races.find((race) => race.round === round);
+        if (found && Array.isArray((found as any).Results) && (found as any).Results.length > 0) {
+          return of(found as JolpicaRaceDetail);
+        }
+
+        // If the schedule doesn't include results, fetch the results endpoint for the season
+        return this.http.get<any>(`${API_URL}/${season}/results.json`).pipe(
+          map((res) => res?.MRData?.RaceTable?.Races ?? []),
+          map((resultsRaces: any[]) => resultsRaces.find((r) => r.round === round)),
+          catchError(() => of(undefined)),
+        );
+      }),
+    );
+  }
+
+  /**
+   * Fetch all races from the first F1 season (1950) until the current year.
+   * Calls the Jolpica `races.json` endpoint for each season sequentially and
+   * concatenates the results into a single array sorted by season and round.
+   */
+  getAllRacesHistory(): Observable<JolpicaRaceSummary[]> {
+    const startSeason = 1950;
+    const endSeason = new Date().getUTCFullYear();
+    const seasons = Array.from({ length: endSeason - startSeason + 1 }, (_, i) => startSeason + i);
+
+    return from(seasons).pipe(
+      concatMap((season) =>
+        this.http.get<any>(`${API_URL}/${season}/races.json`).pipe(
+          map((res) => res?.MRData?.RaceTable?.Races ?? []),
+          catchError(() => of([])),
+        ),
+      ),
+      reduce((acc: JolpicaRaceDetail[], races: JolpicaRaceDetail[]) => acc.concat(races), []),
+      map((races) =>
+        races
+          .map((race) => ({
+            season: race.season,
+            round: race.round,
+            url: race.url,
+            raceName: race.raceName,
+            Circuit: race.Circuit,
+            date: race.date,
+            time: race.time,
+          }))
+          .sort((a, b) => Number(a.season) - Number(b.season) || Number(a.round) - Number(b.round)),
+      ),
     );
   }
 

@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
 import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
-import { take } from 'rxjs/operators';
 
 @Component({
   standalone: true,
@@ -29,6 +30,12 @@ import { take } from 'rxjs/operators';
       .header h1 {
         margin: 0;
         font-size: 2rem;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #94a3b8;
+        font-size: 0.95rem;
       }
 
       .status-pill {
@@ -262,46 +269,52 @@ import { take } from 'rxjs/operators';
       }
 
       .footer {
+        margin-top: 22px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-top: 28px;
+        justify-content: space-between;
         gap: 16px;
+      }
+
+      .footer strong {
+        display: block;
+        font-size: 0.98rem;
+        margin-top: 8px;
       }
 
       .continue-button {
         border: 0;
-        border-radius: 14px;
-        padding: 14px 24px;
-        font-size: 1rem;
-        font-weight: 800;
-        color: #fff;
+        border-radius: 999px;
+        padding: 14px 26px;
         background: #2563eb;
+        color: #fff;
+        font-weight: 700;
         cursor: pointer;
       }
 
       .continue-button:disabled {
-        background: rgba(37, 99, 235, 0.4);
+        background: rgba(148, 163, 184, 0.24);
         cursor: not-allowed;
       }
     `,
   ],
 })
 export class FantasyComponent {
-  private readonly f1Service = inject(F1Service);
+  private readonly service = inject(F1Service);
 
-  protected readonly budgetCap = 100;
-  protected readonly drivers = signal<FantasyDriver[]>([]);
-  protected readonly constructors = signal<FantasyConstructor[]>([]);
-  protected readonly searchTerm = signal('');
-  protected readonly activeTab = signal<'drivers' | 'constructors'>('drivers');
-  protected readonly selectedDrivers = signal<(FantasyDriver | null)[]>(Array.from({ length: 5 }, () => null));
-  protected readonly selectedConstructors = signal<(FantasyConstructor | null)[]>(Array.from({ length: 2 }, () => null));
-  protected readonly isLoading = signal(true);
-  protected readonly error = signal<string | null>(null);
-  private remainingLoads = 2;
+  readonly activeTab = signal<'drivers' | 'constructors'>('drivers');
+  readonly searchTerm = signal('');
+  readonly isLoading = signal(true);
+  readonly error = signal<string | undefined>(undefined);
 
-  protected readonly usedBudget = computed(() => {
+  readonly drivers = signal<FantasyDriver[]>([]);
+  readonly constructors = signal<FantasyConstructor[]>([]);
+  readonly selectedDrivers = signal<(FantasyDriver | null)[]>(Array.from({ length: 5 }, () => null));
+  readonly selectedConstructors = signal<(FantasyConstructor | null)[]>(Array.from({ length: 2 }, () => null));
+
+  readonly selectedDriverCount = computed(() => this.selectedDrivers().filter(Boolean).length);
+  readonly selectedConstructorCount = computed(() => this.selectedConstructors().filter(Boolean).length);
+  readonly usedBudget = computed(() => {
     const driverTotal = this.selectedDrivers()
       .filter((item): item is FantasyDriver => item !== null)
       .reduce((sum, item) => sum + item.price, 0);
@@ -312,144 +325,129 @@ export class FantasyComponent {
 
     return Number((driverTotal + constructorTotal).toFixed(1));
   });
-
-  protected readonly remainingBudget = computed(() => Number((this.budgetCap - this.usedBudget()).toFixed(1)));
-
-  protected readonly selectedDriverCount = computed(() => this.selectedDrivers().filter(Boolean).length);
-  protected readonly selectedConstructorCount = computed(() => this.selectedConstructors().filter(Boolean).length);
-  protected readonly isTeamComplete = computed(
-    () => this.selectedDriverCount() === 5 && this.selectedConstructorCount() === 2,
+  readonly remainingBudget = computed(() => Math.max(0, 100 - this.usedBudget()));
+  readonly isTeamValid = computed(
+    () => this.selectedDriverCount() === 5 && this.selectedConstructorCount() === 2 && this.usedBudget() <= 100,
   );
 
-  protected readonly isTeamValid = computed(
-    () => this.isTeamComplete() && this.remainingBudget() >= 0,
-  );
-
-  protected readonly filteredDrivers = computed(() => {
+  readonly filteredDrivers = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
-    return this.drivers().filter((driver) => {
-      const label = `${driver.name} ${driver.team}`.toLowerCase();
-      return !term || label.includes(term);
-    });
+    return this.drivers().filter((driver) =>
+      !term ||
+      driver.name.toLowerCase().includes(term) ||
+      driver.team.toLowerCase().includes(term) ||
+      driver.initials.toLowerCase().includes(term),
+    );
   });
 
-  protected readonly filteredConstructors = computed(() => {
+  readonly filteredConstructors = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
-    return this.constructors().filter((constructor) => {
-      const label = constructor.name.toLowerCase();
-      return !term || label.includes(term);
-    });
+    return this.constructors().filter((constructor) =>
+      !term ||
+      constructor.name.toLowerCase().includes(term) ||
+      constructor.nationality.toLowerCase().includes(term) ||
+      constructor.initials.toLowerCase().includes(term),
+    );
   });
 
   constructor() {
-    this.f1Service
-      .getFantasyDriversData()
-      .pipe(take(1))
-      .subscribe({
-        next: (drivers) => {
-          this.drivers.set(drivers);
-          this.checkLoaded();
-        },
-        error: () => {
-          this.error.set('Não foi possível carregar os pilotos de 2026.');
-          this.checkLoaded();
-        },
-      });
-
-    this.f1Service
-      .getFantasyConstructorsData()
-      .pipe(take(1))
-      .subscribe({
-        next: (constructors) => {
-          this.constructors.set(constructors);
-          this.checkLoaded();
-        },
-        error: () => {
-          this.error.set('Não foi possível carregar as equipas de 2026.');
-          this.checkLoaded();
-        },
-      });
+    this.loadFantasyData();
   }
 
-  private checkLoaded(): void {
-    this.remainingLoads -= 1;
-    if (this.remainingLoads <= 0) {
-      this.isLoading.set(false);
-    }
-  }
-
-  protected selectTab(tab: 'drivers' | 'constructors'): void {
-    this.activeTab.set(tab);
+  selectTab(value: 'drivers' | 'constructors'): void {
+    this.activeTab.set(value);
     this.searchTerm.set('');
   }
 
-  protected addDriver(driver: FantasyDriver): void {
+  addDriver(driver: FantasyDriver): void {
     if (!this.canAddDriver(driver)) {
       return;
     }
 
-    const nextDrivers = [...this.selectedDrivers()];
-    const firstEmpty = nextDrivers.findIndex((item) => item === null);
-    if (firstEmpty === -1) {
+    this.selectedDrivers.update((current) => {
+      const next = [...current];
+      const firstEmpty = next.findIndex((item) => item === null);
+      if (firstEmpty === -1) {
+        return current;
+      }
+
+      next[firstEmpty] = driver;
+      return next;
+    });
+  }
+
+  removeDriver(index: number): void {
+    this.selectedDrivers.update((current) => {
+      const next = [...current];
+      next[index] = null;
+      return next;
+    });
+  }
+
+  addConstructor(constructor: FantasyConstructor): void {
+    if (!this.canAddConstructor(constructor)) {
       return;
     }
 
-    nextDrivers[firstEmpty] = driver;
-    this.selectedDrivers.set(nextDrivers);
+    this.selectedConstructors.update((current) => {
+      const next = [...current];
+      const firstEmpty = next.findIndex((item) => item === null);
+      if (firstEmpty === -1) {
+        return current;
+      }
+
+      next[firstEmpty] = constructor;
+      return next;
+    });
   }
 
-  protected removeDriver(index: number): void {
-    const nextDrivers = [...this.selectedDrivers()];
-    nextDrivers[index] = null;
-    this.selectedDrivers.set(nextDrivers);
+  removeConstructor(index: number): void {
+    this.selectedConstructors.update((current) => {
+      const next = [...current];
+      next[index] = null;
+      return next;
+    });
   }
 
-  protected addConstructor(item: FantasyConstructor): void {
-    if (!this.canAddConstructor(item)) {
-      return;
-    }
-
-    const nextConstructors = [...this.selectedConstructors()];
-    const firstEmpty = nextConstructors.findIndex((slot) => slot === null);
-    if (firstEmpty === -1) {
-      return;
-    }
-
-    nextConstructors[firstEmpty] = item;
-    this.selectedConstructors.set(nextConstructors);
-  }
-
-  protected removeConstructor(index: number): void {
-    const nextConstructors = [...this.selectedConstructors()];
-    nextConstructors[index] = null;
-    this.selectedConstructors.set(nextConstructors);
-  }
-
-  protected isDriverSelected(driver: FantasyDriver): boolean {
-    return this.selectedDrivers().some((item) => item?.id === driver.id);
-  }
-
-  protected isConstructorSelected(item: FantasyConstructor): boolean {
-    return this.selectedConstructors().some((slot) => slot?.id === item.id);
-  }
-
-  protected canAddDriver(driver: FantasyDriver): boolean {
+  canAddDriver(driver: FantasyDriver): boolean {
     return (
       this.selectedDriverCount() < 5 &&
-      !this.isDriverSelected(driver) &&
-      this.remainingBudget() >= driver.price
+      !this.selectedDrivers().some((item) => item?.id === driver.id) &&
+      this.usedBudget() + driver.price <= 100
     );
   }
 
-  protected canAddConstructor(item: FantasyConstructor): boolean {
+  canAddConstructor(constructor: FantasyConstructor): boolean {
     return (
       this.selectedConstructorCount() < 2 &&
-      !this.isConstructorSelected(item) &&
-      this.remainingBudget() >= item.price
+      !this.selectedConstructors().some((item) => item?.id === constructor.id) &&
+      this.usedBudget() + constructor.price <= 100
     );
   }
 
-  protected formatPrice(value: number): string {
+  formatPrice(value: number): string {
     return `$${value.toFixed(1)}M`;
+  }
+
+  private loadFantasyData(): void {
+    this.isLoading.set(true);
+    this.error.set(undefined);
+
+    forkJoin({
+      drivers: this.service.getFantasyDriversData(),
+      constructors: this.service.getFantasyConstructorsData(),
+    })
+      .pipe(take(1))
+      .subscribe({
+        next: ({ drivers, constructors }) => {
+          this.drivers.set(drivers);
+          this.constructors.set(constructors);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.error.set('Não foi possível carregar os dados de fantasy.');
+          this.isLoading.set(false);
+        },
+      });
   }
 }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { F1Service } from '../../core/services/f1.service';
 import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
+import { take } from 'rxjs/operators';
 
 @Component({
   standalone: true,
@@ -296,6 +297,9 @@ export class FantasyComponent {
   protected readonly activeTab = signal<'drivers' | 'constructors'>('drivers');
   protected readonly selectedDrivers = signal<(FantasyDriver | null)[]>(Array.from({ length: 5 }, () => null));
   protected readonly selectedConstructors = signal<(FantasyConstructor | null)[]>(Array.from({ length: 2 }, () => null));
+  protected readonly isLoading = signal(true);
+  protected readonly error = signal<string | null>(null);
+  private remainingLoads = 2;
 
   protected readonly usedBudget = computed(() => {
     const driverTotal = this.selectedDrivers()
@@ -338,8 +342,40 @@ export class FantasyComponent {
   });
 
   constructor() {
-    this.drivers.set(this.f1Service.getFantasyDriversData());
-    this.constructors.set(this.f1Service.getFantasyConstructorsData());
+    this.f1Service
+      .getFantasyDriversData()
+      .pipe(take(1))
+      .subscribe({
+        next: (drivers) => {
+          this.drivers.set(drivers);
+          this.checkLoaded();
+        },
+        error: () => {
+          this.error.set('Não foi possível carregar os pilotos de 2026.');
+          this.checkLoaded();
+        },
+      });
+
+    this.f1Service
+      .getFantasyConstructorsData()
+      .pipe(take(1))
+      .subscribe({
+        next: (constructors) => {
+          this.constructors.set(constructors);
+          this.checkLoaded();
+        },
+        error: () => {
+          this.error.set('Não foi possível carregar as equipas de 2026.');
+          this.checkLoaded();
+        },
+      });
+  }
+
+  private checkLoaded(): void {
+    this.remainingLoads -= 1;
+    if (this.remainingLoads <= 0) {
+      this.isLoading.set(false);
+    }
   }
 
   protected selectTab(tab: 'drivers' | 'constructors'): void {

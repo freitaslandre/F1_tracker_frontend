@@ -81,8 +81,12 @@
         placeholder="Procurar por nome ou equipa"
         [value]="searchTerm()"
         (input)="searchTerm.set($any($event.target).value)"
+        [disabled]="isLoading()"
       />
     </div>
+
+    <div *ngIf="isLoading()" style="color:#cbd5e1; margin-bottom:18px;">A carregar pilotos e equipas de 2026...</div>
+    <div *ngIf="error()" style="color:#fca5a5; margin-bottom:18px;">{{ error() }}</div>
 
     <div class="selection-list">
       <ng-container *ngIf="activeTab() === 'drivers'; else constructorsList">

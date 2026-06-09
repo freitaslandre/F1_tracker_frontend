@@ -20,30 +20,85 @@ export class F1Service {
   readonly votes = this.driverVotes.asReadonly();
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
-  private readonly fantasyDrivers: FantasyDriver[] = [
-    { id: 'hamilton', initials: 'LH', name: 'Lewis Hamilton', team: 'Mercedes', price: 23.9, points: 278 },
-    { id: 'russell', initials: 'GR', name: 'George Russell', team: 'Mercedes', price: 28.2, points: 257 },
-    { id: 'sargeant', initials: 'GS', name: 'Logan Sargeant', team: 'Williams', price: 12.8, points: 24 },
-    { id: 'perez', initials: 'SP', name: 'Sergio Pérez', team: 'Red Bull', price: 27.5, points: 318 },
-    { id: 'verstappen', initials: 'MV', name: 'Max Verstappen', team: 'Red Bull', price: 34.1, points: 760 },
-    { id: 'leclerc', initials: 'CL', name: 'Charles Leclerc', team: 'Ferrari', price: 29.9, points: 262 },
-    { id: 'giovinazzi', initials: 'AG', name: 'Antonio Giovinazzi', team: 'Sauber', price: 14.4, points: 36 },
-    { id: 'antonelli', initials: 'ZA', name: 'Zane Antonelli', team: 'Alpine', price: 25.0, points: 142 },
-  ];
+  private readonly driverMetadata: Record<string, { initials: string; team: string; price: number; points: number }> = {
+    hamilton: { initials: 'LH', team: 'Mercedes', price: 23.9, points: 278 },
+    russell: { initials: 'GR', team: 'Mercedes', price: 28.2, points: 257 },
+    sargeant: { initials: 'GS', team: 'Williams', price: 12.8, points: 24 },
+    perez: { initials: 'SP', team: 'Red Bull', price: 27.5, points: 318 },
+    verstappen: { initials: 'MV', team: 'Red Bull', price: 34.1, points: 760 },
+    leclerc: { initials: 'CL', team: 'Ferrari', price: 29.9, points: 262 },
+    antonelli: { initials: 'ZA', team: 'Alpine', price: 25.0, points: 142 },
+    albon: { initials: 'AL', team: 'Aston Martin', price: 19.4, points: 104 },
+    alonso: { initials: 'ALO', team: 'Aston Martin', price: 27.8, points: 231 },
+    bearman: { initials: 'BE', team: 'Ferrari', price: 21.3, points: 46 },
+    bortoleto: { initials: 'BO', team: 'Aston Martin', price: 18.9, points: 28 },
+  };
 
-  private readonly fantasyConstructors: FantasyConstructor[] = [
-    { id: 'mercedes', initials: 'ME', name: 'Mercedes', nationality: 'German', price: 45.6, points: 620 },
-    { id: 'red_bull', initials: 'RB', name: 'Red Bull', nationality: 'Austrian', price: 48.2, points: 655 },
-    { id: 'ferrari', initials: 'FE', name: 'Ferrari', nationality: 'Italian', price: 42.0, points: 540 },
-    { id: 'alpine', initials: 'AL', name: 'Alpine', nationality: 'French', price: 28.3, points: 312 },
-  ];
+  private readonly constructorMetadata: Record<string, { initials: string; price: number; points: number; displayName?: string }> = {
+    mercedes: { initials: 'ME', price: 30.8, points: 620 },
+    red_bull: { initials: 'RB', price: 29.3, points: 655, displayName: 'Red Bull Racing' },
+    ferrari: { initials: 'FE', price: 24.8, points: 540 },
+    alpine: { initials: 'AL', price: 15.5, points: 312 },
+    aston_martin: { initials: 'AM', price: 7.3, points: 406 },
+    audi: { initials: 'AU', price: 3.0, points: 394 },
+    cadillac: { initials: 'CA', price: 6.2, points: 342 },
+    haas: { initials: 'HA', price: 10.4, points: 240 },
+    mclaren: { initials: 'MC', price: 29.2, points: 512 },
+    rb: { initials: 'RB', price: 9.3, points: 190, displayName: 'Racing Bulls (RB)' },
+    williams: { initials: 'WI', price: 15.0, points: 196 },
+  };
 
-  getFantasyDriversData(): FantasyDriver[] {
-    return this.fantasyDrivers;
+  getFantasyDriversData(): Observable<FantasyDriver[]> {
+    return this.http.get<any>(`${API_URL}/2026/drivers.json`).pipe(
+      map((res) => res?.MRData?.DriverTable?.Drivers ?? []),
+      map((drivers: any[]) =>
+        drivers.map((driver) => {
+          const id = driver.driverId as string;
+          const metadata = this.driverMetadata[id];
+          const name = `${driver.givenName} ${driver.familyName}`;
+          const initials = metadata?.initials ?? (driver.code ?? name.split(' ').map((part: string) => part[0]).join('').slice(0, 2)).toUpperCase();
+          const team = metadata?.team ?? driver.nationality ?? 'Unknown';
+
+          return {
+            id,
+            initials,
+            name,
+            team,
+            price: metadata?.price ?? 16.0,
+            points: metadata?.points ?? 10,
+          } as FantasyDriver;
+        }),
+      ),
+      catchError(() => of([])),
+    );
   }
 
-  getFantasyConstructorsData(): FantasyConstructor[] {
-    return this.fantasyConstructors;
+  getFantasyConstructorsData(): Observable<FantasyConstructor[]> {
+    return this.http.get<any>(`${API_URL}/2026/constructors.json`).pipe(
+      map((res) => res?.MRData?.ConstructorTable?.Constructors ?? []),
+      map((constructors: any[]) =>
+        constructors.map((constructor) => {
+          const id = constructor.constructorId as string;
+          const metadata = this.constructorMetadata[id];
+          const initials = metadata?.initials ?? constructor.name
+            .split(' ')
+            .map((part: string) => part[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase();
+
+          return {
+            id,
+            initials,
+            name: metadata?.displayName ?? constructor.name,
+            nationality: constructor.nationality,
+            price: metadata?.price ?? 28.0,
+            points: metadata?.points ?? 10,
+          } as FantasyConstructor;
+        }),
+      ),
+      catchError(() => of([])),
+    );
   }
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {

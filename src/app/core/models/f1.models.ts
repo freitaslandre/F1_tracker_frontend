@@ -81,6 +81,7 @@ export interface FantasyConstructor {
   nationality: string;
   price: number;
   points: number;
+  logo?: string;
 }
 
 export interface FavoriteCircuit {

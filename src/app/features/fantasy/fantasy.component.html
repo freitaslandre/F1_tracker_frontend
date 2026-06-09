@@ -91,43 +91,37 @@
 
     <div class="selection-list">
       <ng-container *ngIf="activeTab() === 'drivers'; else constructorsList">
-        <article class="selection-item" *ngFor="let driver of filteredDrivers()">
-          <div class="selection-avatar">{{ driver.initials }}</div>
-          <div class="selection-info">
+        <article class="item-linha" *ngFor="let driver of filteredDrivers()">
+          <div class="avatar-container">
+            <div class="avatar-circle">{{ driver.initials }}</div>
+          </div>
+
+          <div class="driver-info">
             <h3>{{ driver.name }}</h3>
             <p>{{ driver.team }} • {{ driver.points }} pts</p>
           </div>
 
-          <div class="selection-actions">
+          <div class="driver-price">
             <span>{{ formatPrice(driver.price) }}</span>
-            <button
-              type="button"
-              [disabled]="!canAddDriver(driver)"
-              (click)="addDriver(driver)"
-            >
-              +
-            </button>
+            <button type="button" [disabled]="!canAddDriver(driver)" (click)="addDriver(driver)">+</button>
           </div>
         </article>
       </ng-container>
 
       <ng-template #constructorsList>
-        <article class="selection-item" *ngFor="let constructor of filteredConstructors()">
-          <div class="selection-avatar">{{ constructor.initials }}</div>
-          <div class="selection-info">
+        <article class="item-linha" *ngFor="let constructor of filteredConstructors()">
+          <div class="avatar-container">
+            <img [src]="constructor.logo" class="team-logo" alt="{{ constructor.name }} logo" />
+          </div>
+
+          <div class="driver-info">
             <h3>{{ constructor.name }}</h3>
             <p>{{ constructor.nationality }} • {{ constructor.points }} pts</p>
           </div>
 
-          <div class="selection-actions">
+          <div class="driver-price">
             <span>{{ formatPrice(constructor.price) }}</span>
-            <button
-              type="button"
-              [disabled]="!canAddConstructor(constructor)"
-              (click)="addConstructor(constructor)"
-            >
-              +
-            </button>
+            <button type="button" [disabled]="!canAddConstructor(constructor)" (click)="addConstructor(constructor)">+</button>
           </div>
         </article>
       </ng-template>

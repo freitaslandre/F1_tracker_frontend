@@ -71,77 +71,101 @@ import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
         margin-bottom: 18px;
       }
 
-      .budget-card {
-        padding: 16px;
-        border-radius: 18px;
-        background: rgba(30, 41, 59, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.08);
-      }
-
-      .budget-card strong {
-        display: block;
-        margin-bottom: 6px;
-        color: #cbd5e1;
-        font-size: 0.85rem;
-      }
-
-      .budget-card span {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: #fff;
-      }
-
-      .slots {
+      .selection-list {
         display: grid;
-        gap: 14px;
+        gap: 12px;
       }
 
-      .slot {
+      /* Garante que cada linha da lista é uma barra horizontal */
+      .item-linha {
         display: flex;
         align-items: center;
-        gap: 16px;
-        padding: 16px;
-        border-radius: 16px;
-        background: rgba(15, 23, 42, 0.85);
-        border: 1px dashed rgba(148, 163, 184, 0.18);
+        justify-content: space-between;
+        padding: 12px 16px;
+        background-color: #1e1e1e;
+        border-bottom: 1px solid #2d2d2d;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 12px;
       }
 
-      .slot.occupied {
-        border-style: solid;
+      /* Contentor do Logótipo / Círculo */
+      .avatar-container,
+      .avatar-circle {
+        width: 45px;
+        height: 45px;
+        min-width: 45px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
       }
 
-      .slot-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 16px;
-        background: linear-gradient(140deg, #0f172a, #1e3a8a);
-        display: grid;
-        place-items: center;
-        color: #e2e8f0;
-        font-weight: 800;
-        font-size: 1rem;
+      /* O Segredo para os Logótipos da Net ficarem perfeitos */
+      .team-logo {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 6px;
+        box-sizing: border-box;
       }
 
-      .slot-body {
-        flex: 1;
-        min-width: 0;
+      /* Para manter o círculo dos pilotos com o mesmo tamanho */
+      .avatar-circle {
+        background-color: #3a3a3a;
+        color: #ffffff;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 14px;
       }
 
-      .slot-body h3,
-      .slot-body p {
+      /* Agrupamento do texto (Nome e Equipa) */
+      .driver-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .driver-info h3 {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        color: #ffffff;
+      }
+
+      .driver-info p {
         margin: 0;
+        font-size: 13px;
+        color: #aaaaaa;
       }
 
-      .slot-body p {
-        margin-top: 6px;
-        color: #94a3b8;
-        font-size: 0.92rem;
+      /* Preço na ponta direita */
+      .driver-price {
+        font-weight: bold;
+        font-size: 16px;
+        color: #00e5ff;
+        margin-left: 16px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
 
-      .slot-meta {
-        display: grid;
-        gap: 6px;
-        text-align: right;
+      .driver-price button {
+        border: 0;
+        border-radius: 999px;
+        padding: 8px 12px;
+        cursor: pointer;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 700;
+      }
+
+      .driver-price button:disabled {
+        background: rgba(148, 163, 184, 0.24);
+        cursor: not-allowed;
       }
 
       .slot-meta span {
@@ -223,6 +247,15 @@ import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
         color: #f8fafc;
         font-size: 1rem;
         font-weight: 800;
+      }
+
+      .team-logo {
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 4px;
       }
 
       .selection-info {

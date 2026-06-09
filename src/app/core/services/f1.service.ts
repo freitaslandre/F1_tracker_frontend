@@ -47,17 +47,17 @@ export class F1Service {
   ];
 
   private readonly fantasyConstructors: FantasyConstructor[] = [
-    { id: 'mercedes', initials: 'ME', name: 'Mercedes', nationality: 'German', price: 30.8, points: 412 },
-    { id: 'ferrari', initials: 'FE', name: 'Ferrari', nationality: 'Italian', price: 24.8, points: 352 },
-    { id: 'mclaren', initials: 'MC', name: 'McLaren', nationality: 'British', price: 29.2, points: 401 },
-    { id: 'red_bull', initials: 'RB', name: 'Red Bull Racing', nationality: 'Austrian', price: 29.3, points: 395 },
-    { id: 'aston_martin', initials: 'AM', name: 'Aston Martin', nationality: 'British', price: 7.3, points: 64 },
-    { id: 'alpine', initials: 'AL', name: 'Alpine', nationality: 'French', price: 15.5, points: 180 },
-    { id: 'racing_bulls', initials: 'RB', name: 'Racing Bulls', nationality: 'British', price: 9.3, points: 85 },
-    { id: 'williams', initials: 'WI', name: 'Williams', nationality: 'British', price: 15.0, points: 142 },
-    { id: 'audi', initials: 'AU', name: 'Audi', nationality: 'German', price: 3.0, points: 12 },
-    { id: 'haas', initials: 'HA', name: 'Haas F1 Team', nationality: 'American', price: 10.4, points: 98 },
-    { id: 'cadillac', initials: 'CA', name: 'Cadillac', nationality: 'American', price: 6.2, points: 40 },
+    { id: 'mercedes', initials: 'ME', name: 'Mercedes', nationality: 'German', price: 30.8, points: 412, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/mercedes.png' },
+    { id: 'ferrari', initials: 'FE', name: 'Ferrari', nationality: 'Italian', price: 24.8, points: 352, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/ferrari.png' },
+    { id: 'mclaren', initials: 'MC', name: 'McLaren', nationality: 'British', price: 29.2, points: 401, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/mclaren.png' },
+    { id: 'red_bull', initials: 'RB', name: 'Red Bull Racing', nationality: 'Austrian', price: 29.3, points: 395, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/red-bull-racing.png' },
+    { id: 'aston_martin', initials: 'AM', name: 'Aston Martin', nationality: 'British', price: 7.3, points: 64, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/aston-martin.png' },
+    { id: 'alpine', initials: 'AL', name: 'Alpine', nationality: 'French', price: 15.5, points: 180, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/alpine.png' },
+    { id: 'racing_bulls', initials: 'RB', name: 'Racing Bulls', nationality: 'British', price: 9.3, points: 85, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/kick-sauber.png' },
+    { id: 'williams', initials: 'WI', name: 'Williams', nationality: 'British', price: 15.0, points: 142, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/williams.png' },
+    { id: 'haas', initials: 'HA', name: 'Haas F1 Team', nationality: 'American', price: 10.4, points: 98, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/haas.png' },
+    { id: 'audi', initials: 'AU', name: 'Audi', nationality: 'German', price: 3.0, points: 12, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/audi.png' },
+    { id: 'cadillac', initials: 'CA', name: 'Cadillac', nationality: 'American', price: 6.2, points: 40, logo: 'https://media.formula1.com/content/dam/fom-website/teams/2024/cadillac.png' },
   ];
 
   getFantasyDriversData(): Observable<FantasyDriver[]> {

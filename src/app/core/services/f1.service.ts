@@ -21,16 +21,24 @@ export class F1Service {
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
   private readonly fantasyDrivers: FantasyDriver[] = [
-    { id: 'hamilton', initials: 'LH', name: 'Lewis Hamilton', team: 'Mercedes', price: 23.9, points: 278 },
-    { id: 'russell', initials: 'GR', name: 'George Russell', team: 'Mercedes', price: 28.2, points: 257 },
-    { id: 'sargeant', initials: 'GS', name: 'Logan Sargeant', team: 'Williams', price: 12.8, points: 24 },
-    { id: 'perez', initials: 'SP', name: 'Sergio Pérez', team: 'Red Bull', price: 27.5, points: 318 },
-    { id: 'verstappen', initials: 'MV', name: 'Max Verstappen', team: 'Red Bull', price: 34.1, points: 760 },
-    { id: 'leclerc', initials: 'CL', name: 'Charles Leclerc', team: 'Ferrari', price: 29.9, points: 262 },
-    { id: 'antonelli', initials: 'ZA', name: 'Zhou Guanyu', team: 'Alpine', price: 25.0, points: 142 },
-    { id: 'albon', initials: 'AL', name: 'Alex Albon', team: 'Aston Martin', price: 19.4, points: 104 },
-    { id: 'alonso', initials: 'ALO', name: 'Fernando Alonso', team: 'Aston Martin', price: 27.8, points: 231 },
-    { id: 'bearman', initials: 'BE', name: 'Luca Bèarmann', team: 'Ferrari', price: 21.3, points: 46 },
+    { id: 'verstappen', name: 'Max Verstappen', price: 32.0, points: 250, team: 'Red Bull Racing', initials: 'MV' },
+    { id: 'norris', name: 'Lando Norris', price: 29.5, points: 210, team: 'McLaren', initials: 'LN' },
+    { id: 'russell', name: 'George Russell', price: 28.2, points: 157, team: 'Mercedes', initials: 'GR' },
+    { id: 'antonelli', name: 'Kimi Antonelli', price: 25.0, points: 309, team: 'Mercedes', initials: 'KA' },
+    { id: 'hamilton', name: 'Lewis Hamilton', price: 23.9, points: 181, team: 'Ferrari', initials: 'LH' },
+    { id: 'leclerc', name: 'Charles Leclerc', price: 23.8, points: 152, team: 'Ferrari', initials: 'CL' },
+    { id: 'piastri', name: 'Oscar Piastri', price: 22.0, points: 140, team: 'McLaren', initials: 'OP' },
+    { id: 'sainz', name: 'Carlos Sainz', price: 18.5, points: 115, team: 'Williams', initials: 'CS' },
+    { id: 'gasly', name: 'Pierre Gasly', price: 14.0, points: 92, team: 'Alpine', initials: 'PG' },
+    { id: 'ocon', name: 'Esteban Ocon', price: 14.0, points: 88, team: 'Haas', initials: 'EO' },
+    { id: 'albon', name: 'Alex Albon', price: 13.0, points: 75, team: 'Williams', initials: 'AA' },
+    { id: 'hulkenberg', name: 'Nico Hulkenberg', price: 11.5, points: 62, team: 'Audi', initials: 'NH' },
+    { id: 'tsunoda', name: 'Yuki Tsunoda', price: 10.0, points: 55, team: 'Racing Bulls (RB)', initials: 'YT' },
+    { id: 'stroll', name: 'Lance Stroll', price: 8.5, points: 40, team: 'Aston Martin', initials: 'LS' },
+    { id: 'lawson', name: 'Liam Lawson', price: 7.5, points: 32, team: 'Racing Bulls (RB)', initials: 'LL' },
+    { id: 'bearman', name: 'Oliver Bearman', price: 6.0, points: 20, team: 'Haas', initials: 'OB' },
+    { id: 'bottas', name: 'Valtteri Bottas', price: 4.0, points: 5, team: 'Mercedes', initials: 'VB' },
+    { id: 'zhou', name: 'Zhou Guanyu', price: 4.0, points: 2, team: 'Ferrari', initials: 'ZG' },
   ];
 
   private readonly fantasyConstructors: FantasyConstructor[] = [

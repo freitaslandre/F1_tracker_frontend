@@ -6,6 +6,7 @@ import { FavoriteCircuit, FantasyConstructor, FantasyDriver, JolpicaRaceDetail, 
 
 const FAVORITES_KEY = 'f1rm_favorite_circuits';
 const VOTES_KEY = 'f1rm_driver_votes';
+const FANTASY_TEAM_KEY = 'f1rm_fantasy_team';
 const API_URL = 'https://api.jolpi.ca/ergast/f1';
 
 @Injectable({
@@ -65,6 +66,28 @@ export class F1Service {
 
   getFantasyConstructorsData(): Observable<FantasyConstructor[]> {
     return of(this.fantasyConstructors);
+  }
+
+  saveFantasyTeam(driverIds: string[], constructorIds: string[]): void {
+    localStorage.setItem(FANTASY_TEAM_KEY, JSON.stringify({ drivers: driverIds, constructors: constructorIds }));
+  }
+
+  loadFantasyTeam(): { drivers: string[]; constructors: string[] } {
+    const raw = localStorage.getItem(FANTASY_TEAM_KEY);
+    if (!raw) {
+      return { drivers: [], constructors: [] };
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as { drivers?: string[]; constructors?: string[] };
+      return {
+        drivers: Array.isArray(parsed.drivers) ? parsed.drivers.filter((id) => typeof id === 'string') : [],
+        constructors: Array.isArray(parsed.constructors) ? parsed.constructors.filter((id) => typeof id === 'string') : [],
+      };
+    } catch {
+      localStorage.removeItem(FANTASY_TEAM_KEY);
+      return { drivers: [], constructors: [] };
+    }
   }
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {

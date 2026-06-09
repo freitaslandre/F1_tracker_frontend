@@ -64,8 +64,9 @@
       <div>
         <p style="margin:0; color:#94a3b8">Estado da equipa</p>
         <strong>{{ isTeamValid() ? 'Equipa pronta para continuar' : 'Complete a equipa dentro do orçamento' }}</strong>
+        <p *ngIf="saveMessage()" style="margin:8px 0 0; color:#86efac; font-weight:700">{{ saveMessage() }}</p>
       </div>
-      <button class="continue-button" [disabled]="!isTeamValid()" type="button">Continue</button>
+      <button class="continue-button" [disabled]="!isTeamValid()" type="button" (click)="continue()">Continue</button>
     </div>
   </section>
 

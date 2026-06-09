@@ -350,6 +350,8 @@ export class FantasyComponent {
     );
   });
 
+  readonly saveMessage = signal<string | null>(null);
+
   constructor() {
     this.loadFantasyData();
   }
@@ -425,6 +427,23 @@ export class FantasyComponent {
     );
   }
 
+  continue(): void {
+    if (!this.isTeamValid()) {
+      return;
+    }
+
+    const driverIds = this.selectedDrivers()
+      .filter((item): item is FantasyDriver => item !== null)
+      .map((driver) => driver.id);
+
+    const constructorIds = this.selectedConstructors()
+      .filter((item): item is FantasyConstructor => item !== null)
+      .map((constructor) => constructor.id);
+
+    this.service.saveFantasyTeam(driverIds, constructorIds);
+    this.saveMessage.set('Equipa guardada com sucesso.');
+  }
+
   formatPrice(value: number): string {
     return `$${value.toFixed(1)}M`;
   }
@@ -442,6 +461,7 @@ export class FantasyComponent {
         next: ({ drivers, constructors }) => {
           this.drivers.set(drivers);
           this.constructors.set(constructors);
+          this.restoreSavedTeam(drivers, constructors);
           this.isLoading.set(false);
         },
         error: () => {
@@ -449,5 +469,21 @@ export class FantasyComponent {
           this.isLoading.set(false);
         },
       });
+  }
+
+  private restoreSavedTeam(drivers: FantasyDriver[], constructors: FantasyConstructor[]): void {
+    const saved = this.service.loadFantasyTeam();
+    const resolvedDrivers = Array.from({ length: 5 }, (_, idx) => {
+      const driverId = saved.drivers[idx];
+      return drivers.find((driver) => driver.id === driverId) ?? null;
+    });
+
+    const resolvedConstructors = Array.from({ length: 2 }, (_, idx) => {
+      const constructorId = saved.constructors[idx];
+      return constructors.find((constructor) => constructor.id === constructorId) ?? null;
+    });
+
+    this.selectedDrivers.set(resolvedDrivers);
+    this.selectedConstructors.set(resolvedConstructors);
   }
 }

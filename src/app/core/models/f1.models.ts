@@ -65,6 +65,24 @@ export interface JolpicaRaceDetail extends JolpicaRaceSummary {
   Results: JolpicaRaceResult[];
 }
 
+export interface FantasyDriver {
+  id: string;
+  initials: string;
+  name: string;
+  team: string;
+  price: number;
+  points: number;
+}
+
+export interface FantasyConstructor {
+  id: string;
+  initials: string;
+  name: string;
+  nationality: string;
+  price: number;
+  points: number;
+}
+
 export interface FavoriteCircuit {
   circuitId: string;
   circuitName: string;

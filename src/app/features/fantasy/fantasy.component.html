@@ -1,0 +1,131 @@
+<div class="header">
+  <div>
+    <p class="eyebrow">F1 Fantasy</p>
+    <h1>Monte a sua equipa</h1>
+  </div>
+
+  <div class="status-pill">{{ selectedDriverCount() }}/5 Drivers • {{ selectedConstructorCount() }}/2 Construtores</div>
+</div>
+
+<div class="layout">
+  <section class="panel">
+    <div class="budget-overview">
+      <div class="budget-card">
+        <strong>Orçamento total</strong>
+        <span>$100.0M</span>
+      </div>
+      <div class="budget-card">
+        <strong>Orçamento usado</strong>
+        <span>{{ usedBudget().toFixed(1) }}M</span>
+      </div>
+      <div class="budget-card">
+        <strong>Orçamento restante</strong>
+        <span>{{ remainingBudget().toFixed(1) }}M</span>
+      </div>
+    </div>
+
+    <h2>A Minha Equipa</h2>
+
+    <div class="slots">
+      <div class="slot" *ngFor="let driver of selectedDrivers(); let idx = index" [class.occupied]="driver !== null">
+        <div class="slot-icon">DR</div>
+
+        <div class="slot-body">
+          <h3>{{ driver?.name ?? 'Add Driver' }}</h3>
+          <p>{{ driver ? driver.team : 'Escolha um piloto para este slot' }}</p>
+        </div>
+
+        <div class="slot-meta">
+          <span>{{ driver ? formatPrice(driver.price) : 'Livre' }}</span>
+          <small>{{ driver ? driver.points + ' pontos' : 'Obrigatório' }}</small>
+        </div>
+
+        <button *ngIf="driver" type="button" (click)="removeDriver(idx)" aria-label="Remover piloto">✕</button>
+      </div>
+
+      <div class="slot" *ngFor="let item of selectedConstructors(); let idx = index" [class.occupied]="item !== null">
+        <div class="slot-icon">C</div>
+
+        <div class="slot-body">
+          <h3>{{ item?.name ?? 'Add Constructor' }}</h3>
+          <p>{{ item ? item.nationality : 'Escolha uma equipa para este slot' }}</p>
+        </div>
+
+        <div class="slot-meta">
+          <span>{{ item ? formatPrice(item.price) : 'Livre' }}</span>
+          <small>{{ item ? item.points + ' pontos' : 'Obrigatório' }}</small>
+        </div>
+
+        <button *ngIf="item" type="button" (click)="removeConstructor(idx)" aria-label="Remover construtor">✕</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>
+        <p style="margin:0; color:#94a3b8">Estado da equipa</p>
+        <strong>{{ isTeamValid() ? 'Equipa pronta para continuar' : 'Complete a equipa dentro do orçamento' }}</strong>
+      </div>
+      <button class="continue-button" [disabled]="!isTeamValid()" type="button">Continue</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="tab-list">
+      <button type="button" class="tab" [class.active]="activeTab() === 'drivers'" (click)="selectTab('drivers')">Drivers</button>
+      <button type="button" class="tab" [class.active]="activeTab() === 'constructors'" (click)="selectTab('constructors')">Construtores</button>
+    </div>
+
+    <div class="search-bar">
+      <input
+        type="search"
+        placeholder="Procurar por nome ou equipa"
+        [value]="searchTerm()"
+        (input)="searchTerm.set($any($event.target).value)"
+      />
+    </div>
+
+    <div class="selection-list">
+      <ng-container *ngIf="activeTab() === 'drivers'; else constructorsList">
+        <article class="selection-item" *ngFor="let driver of filteredDrivers()">
+          <div class="selection-avatar">{{ driver.initials }}</div>
+          <div class="selection-info">
+            <h3>{{ driver.name }}</h3>
+            <p>{{ driver.team }} • {{ driver.points }} pts</p>
+          </div>
+
+          <div class="selection-actions">
+            <span>{{ formatPrice(driver.price) }}</span>
+            <button
+              type="button"
+              [disabled]="!canAddDriver(driver)"
+              (click)="addDriver(driver)"
+            >
+              +
+            </button>
+          </div>
+        </article>
+      </ng-container>
+
+      <ng-template #constructorsList>
+        <article class="selection-item" *ngFor="let constructor of filteredConstructors()">
+          <div class="selection-avatar">{{ constructor.initials }}</div>
+          <div class="selection-info">
+            <h3>{{ constructor.name }}</h3>
+            <p>{{ constructor.nationality }} • {{ constructor.points }} pts</p>
+          </div>
+
+          <div class="selection-actions">
+            <span>{{ formatPrice(constructor.price) }}</span>
+            <button
+              type="button"
+              [disabled]="!canAddConstructor(constructor)"
+              (click)="addConstructor(constructor)"
+            >
+              +
+            </button>
+          </div>
+        </article>
+      </ng-template>
+    </div>
+  </section>
+</div>

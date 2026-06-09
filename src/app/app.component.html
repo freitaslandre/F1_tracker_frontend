@@ -11,6 +11,7 @@
     <nav class="nav-links" aria-label="Navegacao principal">
       @if (auth.isAuthenticated()) {
         <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
+        <a routerLink="/fantasy" routerLinkActive="active">Fantasy</a>
         <a routerLink="/profile" routerLinkActive="active">Perfil</a>
         <button type="button" class="ghost-button" (click)="logout()">Sair</button>
       } @else {

@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, from, of } from 'rxjs';
 import { map, concatMap, reduce, catchError, switchMap } from 'rxjs/operators';
-import { FavoriteCircuit, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
+import { FavoriteCircuit, FantasyConstructor, FantasyDriver, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
 
 const FAVORITES_KEY = 'f1rm_favorite_circuits';
 const VOTES_KEY = 'f1rm_driver_votes';
@@ -19,6 +19,32 @@ export class F1Service {
   readonly favorites = this.favoriteCircuits.asReadonly();
   readonly votes = this.driverVotes.asReadonly();
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
+
+  private readonly fantasyDrivers: FantasyDriver[] = [
+    { id: 'hamilton', initials: 'LH', name: 'Lewis Hamilton', team: 'Mercedes', price: 23.9, points: 278 },
+    { id: 'russell', initials: 'GR', name: 'George Russell', team: 'Mercedes', price: 28.2, points: 257 },
+    { id: 'sargeant', initials: 'GS', name: 'Logan Sargeant', team: 'Williams', price: 12.8, points: 24 },
+    { id: 'perez', initials: 'SP', name: 'Sergio Pérez', team: 'Red Bull', price: 27.5, points: 318 },
+    { id: 'verstappen', initials: 'MV', name: 'Max Verstappen', team: 'Red Bull', price: 34.1, points: 760 },
+    { id: 'leclerc', initials: 'CL', name: 'Charles Leclerc', team: 'Ferrari', price: 29.9, points: 262 },
+    { id: 'giovinazzi', initials: 'AG', name: 'Antonio Giovinazzi', team: 'Sauber', price: 14.4, points: 36 },
+    { id: 'antonelli', initials: 'ZA', name: 'Zane Antonelli', team: 'Alpine', price: 25.0, points: 142 },
+  ];
+
+  private readonly fantasyConstructors: FantasyConstructor[] = [
+    { id: 'mercedes', initials: 'ME', name: 'Mercedes', nationality: 'German', price: 45.6, points: 620 },
+    { id: 'red_bull', initials: 'RB', name: 'Red Bull', nationality: 'Austrian', price: 48.2, points: 655 },
+    { id: 'ferrari', initials: 'FE', name: 'Ferrari', nationality: 'Italian', price: 42.0, points: 540 },
+    { id: 'alpine', initials: 'AL', name: 'Alpine', nationality: 'French', price: 28.3, points: 312 },
+  ];
+
+  getFantasyDriversData(): FantasyDriver[] {
+    return this.fantasyDrivers;
+  }
+
+  getFantasyConstructorsData(): FantasyConstructor[] {
+    return this.fantasyConstructors;
+  }
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
     // Use the "races" endpoint to get the full season schedule (not only completed results)

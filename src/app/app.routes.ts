@@ -14,6 +14,12 @@ export const routes: Routes = [
       import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
+    path: 'fantasy',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/fantasy/fantasy.component').then((m) => m.FantasyComponent),
+  },
+  {
     path: 'races/:season/:round',
     canActivate: [authGuard],
     loadComponent: () =>

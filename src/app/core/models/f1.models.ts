@@ -62,7 +62,7 @@ export interface JolpicaRaceResult {
 }
 
 export interface JolpicaRaceDetail extends JolpicaRaceSummary {
-  Results: JolpicaRaceResult[];
+  Results?: JolpicaRaceResult[];
 }
 
 export interface FantasyDriver {

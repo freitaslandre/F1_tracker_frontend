@@ -47,7 +47,7 @@
         <span>Voto</span>
       </div>
 
-      @for (result of race.Results; track result.Driver.driverId) {
+      @for (result of race.Results ?? []; track result.Driver.driverId) {
         <div class="table-row">
           <span class="position">{{ result.position }}</span>
           <span>

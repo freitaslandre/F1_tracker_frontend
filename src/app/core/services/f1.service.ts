@@ -9,6 +9,14 @@ const VOTES_KEY = 'f1rm_driver_votes';
 const FANTASY_TEAM_KEY = 'f1rm_fantasy_team';
 const API_URL = 'https://api.jolpi.ca/ergast/f1';
 
+interface JolpicaApiResponse {
+  MRData?: {
+    RaceTable?: {
+      Races?: JolpicaRaceDetail[];
+    };
+  };
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -92,7 +100,7 @@ export class F1Service {
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
     // Use the "races" endpoint to get the full season schedule (not only completed results)
-    return this.http.get<any>(`${API_URL}/${season}/races.json`).pipe(
+    return this.http.get<JolpicaApiResponse>(`${API_URL}/${season}/races.json`).pipe(
       map((res) => res?.MRData?.RaceTable?.Races ?? []),
     );
   }
@@ -123,16 +131,15 @@ export class F1Service {
         const found = races.find((race) => race.round === round);
         if (!found) return of(undefined);
 
-        // Try to enrich the calendar entry with results from results.json, but
-        // return the calendar entry even if results are unavailable.
-        return this.http.get<any>(`${API_URL}/${season}/results.json`).pipe(
-          map((res) => res?.MRData?.RaceTable?.Races ?? []),
-          map((resultsRaces: any[]) => {
-            const resRace = resultsRaces.find((r) => r.round === round);
-            return resRace && resRace.Results && resRace.Results.length > 0
-              ? ({ ...found, Results: resRace.Results } as JolpicaRaceDetail)
-              : (found as JolpicaRaceDetail);
-          }),
+        // Fetch the selected round directly. The season-wide results endpoint is paginated,
+        // so later races may be missing from the first response page.
+        return this.http.get<JolpicaApiResponse>(`${API_URL}/${season}/${round}/results.json`).pipe(
+          map((res) => res?.MRData?.RaceTable?.Races?.[0]),
+          map((resultRace) =>
+            resultRace?.Results?.length
+              ? ({ ...found, Results: resultRace.Results } as JolpicaRaceDetail)
+              : (found as JolpicaRaceDetail),
+          ),
           catchError(() => of(found as JolpicaRaceDetail)),
         );
       }),
@@ -151,7 +158,7 @@ export class F1Service {
 
     return from(seasons).pipe(
       concatMap((season) =>
-        this.http.get<any>(`${API_URL}/${season}/races.json`).pipe(
+        this.http.get<JolpicaApiResponse>(`${API_URL}/${season}/races.json`).pipe(
           map((res) => res?.MRData?.RaceTable?.Races ?? []),
           catchError(() => of([])),
         ),

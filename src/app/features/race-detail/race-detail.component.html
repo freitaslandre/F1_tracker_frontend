@@ -50,9 +50,20 @@
       @for (result of race.Results ?? []; track result.Driver.driverId) {
         <div class="table-row">
           <span class="position">{{ result.position }}</span>
-          <span>
-            <strong>{{ result.Driver.givenName }} {{ result.Driver.familyName }}</strong>
-            <small>{{ result.Driver.code }} · Volta rapida {{ result.FastestLap?.Time?.time }}</small>
+          <span class="driver-cell">
+            @if (driverPhotoUrl(result.Driver.url) | async; as photoUrl) {
+              <img
+                class="driver-photo"
+                [src]="photoUrl"
+                [alt]="result.Driver.givenName + ' ' + result.Driver.familyName"
+              />
+            } @else {
+              <span class="driver-photo initials">{{ driverInitials(result.Driver.givenName, result.Driver.familyName) }}</span>
+            }
+            <span>
+              <strong>{{ result.Driver.givenName }} {{ result.Driver.familyName }}</strong>
+              <small>{{ result.Driver.code }} · Volta rapida {{ result.FastestLap?.Time?.time }}</small>
+            </span>
           </span>
           <span>{{ result.Constructor.name }}</span>
           <span>{{ result.Time?.time ?? result.status }}</span>

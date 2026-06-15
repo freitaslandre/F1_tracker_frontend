@@ -454,6 +454,31 @@ input {
   font-weight: 900;
 }
 
+.driver-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.driver-photo {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: var(--surface-strong);
+  object-fit: cover;
+}
+
+.driver-photo.initials {
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
 .table-row small,
 .table-row strong {
   display: block;

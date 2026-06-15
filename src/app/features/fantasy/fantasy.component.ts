@@ -1,9 +1,32 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
-import { forkJoin } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map, shareReplay, switchMap, take } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
 import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
+
+interface WikipediaSummary {
+  thumbnail?: {
+    source?: string;
+  };
+  originalimage?: {
+    source?: string;
+  };
+}
+
+interface WikipediaSearchResponse {
+  query?: {
+    pages?: Record<
+      string,
+      {
+        thumbnail?: {
+          source?: string;
+        };
+      }
+    >;
+  };
+}
 
 @Component({
   standalone: true,
@@ -119,6 +142,19 @@ import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
         border-radius: 50%;
         font-weight: bold;
         font-size: 14px;
+      }
+
+      .driver-image {
+        object-fit: cover;
+        border-radius: 50%;
+        padding: 0;
+        background: #3a3a3a;
+      }
+
+      .slot-icon.driver-image {
+        width: 45px;
+        height: 45px;
+        min-width: 45px;
       }
 
       /* Agrupamento do texto (Nome e Equipa) */
@@ -334,6 +370,32 @@ import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
 })
 export class FantasyComponent {
   private readonly service = inject(F1Service);
+  private readonly http = inject(HttpClient);
+  private readonly driverPhotoCache = new Map<string, Observable<string | undefined>>();
+  private readonly driverWikiTitles: Record<string, string> = {
+    russell: 'George_Russell_(racing_driver)',
+    antonelli: 'Andrea_Kimi_Antonelli',
+    leclerc: 'Charles_Leclerc',
+    hamilton: 'Lewis_Hamilton',
+    norris: 'Lando_Norris',
+    piastri: 'Oscar_Piastri',
+    verstappen: 'Max_Verstappen',
+    hadjar: 'Isack_Hadjar',
+    alonso: 'Fernando_Alonso',
+    stroll: 'Lance_Stroll',
+    colapinto: 'Franco_Colapinto',
+    gasly: 'Pierre_Gasly',
+    lawson: 'Liam_Lawson',
+    lindblad: 'Arvid_Lindblad',
+    sainz: 'Carlos_Sainz_Jr.',
+    albon: 'Alex_Albon',
+    hulkenberg: 'Nico_Hülkenberg',
+    bortoleto: 'Gabriel_Bortoleto',
+    ocon: 'Esteban_Ocon',
+    bearman: 'Oliver_Bearman',
+    perez: 'Sergio_Pérez',
+    bottas: 'Valtteri_Bottas',
+  };
 
   readonly activeTab = signal<'drivers' | 'constructors'>('drivers');
   readonly searchTerm = signal('');
@@ -479,6 +541,41 @@ export class FantasyComponent {
 
   formatPrice(value: number): string {
     return `$${value.toFixed(1)}M`;
+  }
+
+  driverPhotoUrl(driver: FantasyDriver): Observable<string | undefined> {
+    const cached = this.driverPhotoCache.get(driver.id);
+    if (cached) {
+      return cached;
+    }
+
+    const title = encodeURIComponent(this.driverWikiTitles[driver.id] ?? driver.name.replaceAll(' ', '_'));
+    const photoUrl = this.http
+      .get<WikipediaSummary>(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`)
+      .pipe(
+        map((summary) => summary.thumbnail?.source ?? summary.originalimage?.source),
+        switchMap((summaryPhoto) => summaryPhoto ? of(summaryPhoto) : this.searchDriverPhoto(driver.name)),
+        catchError(() => of(undefined)),
+        shareReplay({ bufferSize: 1, refCount: true }),
+      );
+
+    this.driverPhotoCache.set(driver.id, photoUrl);
+    return photoUrl;
+  }
+
+  private searchDriverPhoto(driverName: string): Observable<string | undefined> {
+    const query = encodeURIComponent(`${driverName} racing driver`);
+    return this.http
+      .get<WikipediaSearchResponse>(
+        `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${query}&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=160&format=json&origin=*`,
+      )
+      .pipe(
+        map((response) => {
+          const pages = Object.values(response.query?.pages ?? {});
+          return pages[0]?.thumbnail?.source;
+        }),
+        catchError(() => of(undefined)),
+      );
   }
 
   private loadFantasyData(): void {

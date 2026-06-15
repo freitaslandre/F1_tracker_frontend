@@ -28,7 +28,15 @@
 
     <div class="slots">
       <div class="slot" *ngFor="let driver of selectedDrivers(); let idx = index" [class.occupied]="driver !== null">
-        <div class="slot-icon">DR</div>
+        @if (driver) {
+          @if (driverPhotoUrl(driver) | async; as photoUrl) {
+            <img class="slot-icon driver-image" [src]="photoUrl" [alt]="driver.name" />
+          } @else {
+            <div class="slot-icon">{{ driver.initials }}</div>
+          }
+        } @else {
+          <div class="slot-icon">DR</div>
+        }
 
         <div class="slot-body">
           <h3>{{ driver?.name ?? 'Add Driver' }}</h3>
@@ -93,7 +101,11 @@
       <ng-container *ngIf="activeTab() === 'drivers'; else constructorsList">
         <article class="item-linha" *ngFor="let driver of filteredDrivers()">
           <div class="avatar-container">
-            <div class="avatar-circle">{{ driver.initials }}</div>
+            @if (driverPhotoUrl(driver) | async; as photoUrl) {
+              <img class="avatar-circle driver-image" [src]="photoUrl" [alt]="driver.name" />
+            } @else {
+              <div class="avatar-circle">{{ driver.initials }}</div>
+            }
           </div>
 
           <div class="driver-info">

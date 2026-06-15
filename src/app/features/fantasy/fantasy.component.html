@@ -24,47 +24,67 @@
       </div>
     </div>
 
-    <h2>A Minha Equipa</h2>
+    <div class="team-heading">
+      <div>
+        <h2>A Minha Equipa</h2>
+        <p>{{ selectedDriverCount() }} pilotos e {{ selectedConstructorCount() }} construtores escolhidos</p>
+      </div>
+      <span>{{ remainingBudget().toFixed(1) }}M livres</span>
+    </div>
 
     <div class="slots">
-      <div class="slot" *ngFor="let driver of selectedDrivers(); let idx = index" [class.occupied]="driver !== null">
-        @if (driver) {
-          @if (driverPhotoUrl(driver) | async; as photoUrl) {
-            <img class="slot-icon driver-image" [src]="photoUrl" [alt]="driver.name" />
+      <div class="slot-group">
+        <p class="slot-label">Pilotos</p>
+        <div class="slot" *ngFor="let driver of selectedDrivers(); let idx = index" [class.occupied]="driver !== null">
+          <span class="slot-number">{{ idx + 1 }}</span>
+
+          @if (driver) {
+            @if (driverPhotoUrl(driver) | async; as photoUrl) {
+              <img class="slot-icon driver-image" [src]="photoUrl" [alt]="driver.name" />
+            } @else {
+              <div class="slot-icon">{{ driver.initials }}</div>
+            }
           } @else {
-            <div class="slot-icon">{{ driver.initials }}</div>
+            <div class="slot-icon empty">DR</div>
           }
-        } @else {
-          <div class="slot-icon">DR</div>
-        }
 
-        <div class="slot-body">
-          <h3>{{ driver?.name ?? 'Add Driver' }}</h3>
-          <p>{{ driver ? driver.team : 'Escolha um piloto para este slot' }}</p>
+          <div class="slot-body">
+            <h3>{{ driver?.name ?? 'Piloto vazio' }}</h3>
+            <p>{{ driver ? driver.team : 'Escolha um piloto para este slot' }}</p>
+          </div>
+
+          <div class="slot-meta">
+            <span>{{ driver ? formatPrice(driver.price) : 'Livre' }}</span>
+            <small>{{ driver ? driver.points + ' pts' : 'Obrigatório' }}</small>
+          </div>
+
+          <button *ngIf="driver" class="remove-slot" type="button" (click)="removeDriver(idx)" aria-label="Remover piloto">✕</button>
         </div>
-
-        <div class="slot-meta">
-          <span>{{ driver ? formatPrice(driver.price) : 'Livre' }}</span>
-          <small>{{ driver ? driver.points + ' pontos' : 'Obrigatório' }}</small>
-        </div>
-
-        <button *ngIf="driver" type="button" (click)="removeDriver(idx)" aria-label="Remover piloto">✕</button>
       </div>
 
-      <div class="slot" *ngFor="let item of selectedConstructors(); let idx = index" [class.occupied]="item !== null">
-        <div class="slot-icon">C</div>
+      <div class="slot-group">
+        <p class="slot-label">Construtores</p>
+        <div class="slot constructor-slot" *ngFor="let item of selectedConstructors(); let idx = index" [class.occupied]="item !== null">
+          <span class="slot-number">{{ idx + 1 }}</span>
 
-        <div class="slot-body">
-          <h3>{{ item?.name ?? 'Add Constructor' }}</h3>
-          <p>{{ item ? item.nationality : 'Escolha uma equipa para este slot' }}</p>
+          @if (item?.logo) {
+            <img class="slot-icon constructor-logo" [src]="item?.logo" [alt]="item?.name + ' logo'" />
+          } @else {
+            <div class="slot-icon empty">C</div>
+          }
+
+          <div class="slot-body">
+            <h3>{{ item?.name ?? 'Construtor vazio' }}</h3>
+            <p>{{ item ? item.nationality : 'Escolha uma equipa para este slot' }}</p>
+          </div>
+
+          <div class="slot-meta">
+            <span>{{ item ? formatPrice(item.price) : 'Livre' }}</span>
+            <small>{{ item ? item.points + ' pts' : 'Obrigatório' }}</small>
+          </div>
+
+          <button *ngIf="item" class="remove-slot" type="button" (click)="removeConstructor(idx)" aria-label="Remover construtor">✕</button>
         </div>
-
-        <div class="slot-meta">
-          <span>{{ item ? formatPrice(item.price) : 'Livre' }}</span>
-          <small>{{ item ? item.points + ' pontos' : 'Obrigatório' }}</small>
-        </div>
-
-        <button *ngIf="item" type="button" (click)="removeConstructor(idx)" aria-label="Remover construtor">✕</button>
       </div>
     </div>
 

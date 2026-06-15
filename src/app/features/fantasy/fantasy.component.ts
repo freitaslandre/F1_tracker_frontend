@@ -83,8 +83,28 @@ interface WikipediaSearchResponse {
       }
 
       .panel h2 {
-        margin: 0 0 16px;
+        margin: 0;
         font-size: 1.2rem;
+      }
+
+      .team-heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 20px 0 16px;
+      }
+
+      .team-heading p {
+        margin: 6px 0 0;
+        color: #94a3b8;
+        font-size: 0.88rem;
+      }
+
+      .team-heading > span {
+        flex: 0 0 auto;
+        color: #86efac;
+        font-weight: 800;
       }
 
       .budget-overview {
@@ -92,6 +112,110 @@ interface WikipediaSearchResponse {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
         margin-bottom: 18px;
+      }
+
+      .budget-card {
+        display: grid;
+        gap: 6px;
+        padding: 14px;
+        border-radius: 12px;
+        background: #111827;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+      }
+
+      .budget-card strong {
+        color: #94a3b8;
+        font-size: 0.78rem;
+      }
+
+      .budget-card span {
+        color: #ffffff;
+        font-size: 1.1rem;
+        font-weight: 900;
+      }
+
+      .slots {
+        display: grid;
+        gap: 18px;
+      }
+
+      .slot-group {
+        display: grid;
+        gap: 10px;
+      }
+
+      .slot-label {
+        margin: 0;
+        color: #cbd5e1;
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .slot {
+        display: grid;
+        grid-template-columns: 24px 54px minmax(0, 1fr) auto 28px;
+        gap: 12px;
+        align-items: center;
+        min-height: 76px;
+        padding: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 14px;
+        background: rgba(2, 6, 23, 0.34);
+      }
+
+      .slot.occupied {
+        background: #111827;
+        border-color: rgba(96, 165, 250, 0.28);
+      }
+
+      .slot-number {
+        display: grid;
+        place-items: center;
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 900;
+      }
+
+      .slot-icon {
+        display: grid;
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+        place-items: center;
+        border-radius: 50%;
+        background: #1f2937;
+        color: #ffffff;
+        font-weight: 900;
+      }
+
+      .slot-icon.empty {
+        color: #64748b;
+        border: 1px dashed rgba(148, 163, 184, 0.32);
+        background: transparent;
+      }
+
+      .slot-body {
+        min-width: 0;
+      }
+
+      .slot-body h3 {
+        margin: 0;
+        overflow: hidden;
+        color: #ffffff;
+        font-size: 0.98rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .slot-body p {
+        margin: 5px 0 0;
+        overflow: hidden;
+        color: #94a3b8;
+        font-size: 0.82rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .selection-list {
@@ -152,9 +276,17 @@ interface WikipediaSearchResponse {
       }
 
       .slot-icon.driver-image {
-        width: 45px;
-        height: 45px;
-        min-width: 45px;
+        width: 54px;
+        height: 54px;
+        min-width: 54px;
+      }
+
+      .constructor-logo {
+        object-fit: contain;
+        border-radius: 12px;
+        background: #ffffff;
+        padding: 8px;
+        box-sizing: border-box;
       }
 
       /* Agrupamento do texto (Nome e Equipa) */
@@ -221,6 +353,18 @@ interface WikipediaSearchResponse {
         color: #fef2f2;
         font-size: 1.1rem;
         cursor: pointer;
+      }
+
+      .remove-slot {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 50%;
+      }
+
+      .remove-slot:hover {
+        background: rgba(248, 113, 113, 0.16);
       }
 
       .tab-list {
@@ -364,6 +508,34 @@ interface WikipediaSearchResponse {
       .continue-button:disabled {
         background: rgba(148, 163, 184, 0.24);
         cursor: not-allowed;
+      }
+
+      @media (max-width: 760px) {
+        :host {
+          padding: 16px;
+        }
+
+        .header,
+        .team-heading,
+        .footer {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .layout,
+        .budget-overview {
+          grid-template-columns: 1fr;
+        }
+
+        .slot {
+          grid-template-columns: 20px 50px minmax(0, 1fr) 28px;
+        }
+
+        .slot-meta {
+          grid-column: 3 / 5;
+          display: flex;
+          gap: 8px;
+        }
       }
     `,
   ],

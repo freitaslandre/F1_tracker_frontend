@@ -1,7 +1,7 @@
 @if (race(); as race) {
   <section class="page-heading detail-heading">
     <div>
-      <a class="text-link" routerLink="/dashboard">Voltar ao dashboard</a>
+      <button class="secondary-button compact" type="button" (click)="goBack()">Voltar</button>
       <p class="eyebrow">Round {{ race.round }} / {{ race.season }}</p>
       <h1>{{ race.raceName }}</h1>
       <p>{{ race.Circuit.circuitName }} · {{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</p>

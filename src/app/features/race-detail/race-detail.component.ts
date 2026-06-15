@@ -1,4 +1,5 @@
 import { Component, computed, inject } from '@angular/core';
+import { Location } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
@@ -13,6 +14,7 @@ import { F1Service } from '../../core/services/f1.service';
 })
 export class RaceDetailComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
   protected readonly f1Service = inject(F1Service);
 
   protected readonly race = toSignal<JolpicaRaceDetail | undefined>(
@@ -36,5 +38,9 @@ export class RaceDetailComponent {
 
   protected toggleFavorite(race: JolpicaRaceDetail): void {
     this.f1Service.toggleFavoriteCircuit(race);
+  }
+
+  protected goBack(): void {
+    this.location.back();
   }
 }

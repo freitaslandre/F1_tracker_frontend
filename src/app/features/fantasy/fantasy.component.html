@@ -67,8 +67,17 @@
         <div class="slot constructor-slot" *ngFor="let item of selectedConstructors(); let idx = index" [class.occupied]="item !== null">
           <span class="slot-number">{{ idx + 1 }}</span>
 
-          @if (item?.logo) {
-            <img class="slot-icon constructor-logo" [src]="item?.logo" [alt]="item?.name + ' logo'" />
+          @if (item) {
+            @if (constructorLogoUrl(item) | async; as logoUrl) {
+              <img
+                class="slot-icon constructor-logo"
+                [src]="logoUrl"
+                [alt]="item.name + ' logo'"
+                (error)="markConstructorLogoBroken(item.id)"
+              />
+            } @else {
+              <div class="slot-icon">{{ item.initials }}</div>
+            }
           } @else {
             <div class="slot-icon empty">C</div>
           }
@@ -143,7 +152,16 @@
       <ng-template #constructorsList>
         <article class="item-linha" *ngFor="let constructor of filteredConstructors()">
           <div class="avatar-container">
-            <img [src]="constructor.logo" class="team-logo" alt="{{ constructor.name }} logo" />
+            @if (constructorLogoUrl(constructor) | async; as logoUrl) {
+              <img
+                [src]="logoUrl"
+                class="team-logo"
+                [alt]="constructor.name + ' logo'"
+                (error)="markConstructorLogoBroken(constructor.id)"
+              />
+            } @else {
+              <div class="avatar-circle constructor-fallback">{{ constructor.initials }}</div>
+            }
           </div>
 
           <div class="driver-info">

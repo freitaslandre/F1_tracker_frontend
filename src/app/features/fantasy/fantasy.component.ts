@@ -289,6 +289,13 @@ interface WikipediaSearchResponse {
         box-sizing: border-box;
       }
 
+      .constructor-fallback {
+        border-radius: 12px;
+        background: #111827;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        color: #bfdbfe;
+      }
+
       /* Agrupamento do texto (Nome e Equipa) */
       .driver-info {
         flex-grow: 1;
@@ -544,6 +551,7 @@ export class FantasyComponent {
   private readonly service = inject(F1Service);
   private readonly http = inject(HttpClient);
   private readonly driverPhotoCache = new Map<string, Observable<string | undefined>>();
+  private readonly constructorLogoCache = new Map<string, Observable<string | undefined>>();
   private readonly driverWikiTitles: Record<string, string> = {
     russell: 'George_Russell_(racing_driver)',
     antonelli: 'Andrea_Kimi_Antonelli',
@@ -568,6 +576,10 @@ export class FantasyComponent {
     perez: 'Sergio_Pérez',
     bottas: 'Valtteri_Bottas',
   };
+  private readonly constructorWikiTitles: Record<string, string> = {
+    audi: 'Audi',
+    cadillac: 'Cadillac',
+  };
 
   readonly activeTab = signal<'drivers' | 'constructors'>('drivers');
   readonly searchTerm = signal('');
@@ -578,6 +590,7 @@ export class FantasyComponent {
   readonly constructors = signal<FantasyConstructor[]>([]);
   readonly selectedDrivers = signal<(FantasyDriver | null)[]>(Array.from({ length: 5 }, () => null));
   readonly selectedConstructors = signal<(FantasyConstructor | null)[]>(Array.from({ length: 2 }, () => null));
+  readonly brokenConstructorLogos = signal<Record<string, boolean>>({});
 
   readonly selectedDriverCount = computed(() => this.selectedDrivers().filter(Boolean).length);
   readonly selectedConstructorCount = computed(() => this.selectedConstructors().filter(Boolean).length);
@@ -692,6 +705,41 @@ export class FantasyComponent {
       !this.selectedConstructors().some((item) => item?.id === constructor.id) &&
       this.usedBudget() + constructor.price <= 100
     );
+  }
+
+  constructorLogoUrl(constructor: FantasyConstructor | null): Observable<string | undefined> {
+    if (!constructor) {
+      return of(undefined);
+    }
+
+    if (constructor.logo && !this.brokenConstructorLogos()[constructor.id]) {
+      return of(constructor.logo);
+    }
+
+    const cached = this.constructorLogoCache.get(constructor.id);
+    if (cached) {
+      return cached;
+    }
+
+    const title = this.constructorWikiTitles[constructor.id];
+    if (!title) {
+      return of(undefined);
+    }
+
+    const logoUrl = this.http
+      .get<WikipediaSummary>(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`)
+      .pipe(
+        map((summary) => summary.thumbnail?.source ?? summary.originalimage?.source),
+        catchError(() => of(undefined)),
+        shareReplay({ bufferSize: 1, refCount: true }),
+      );
+
+    this.constructorLogoCache.set(constructor.id, logoUrl);
+    return logoUrl;
+  }
+
+  markConstructorLogoBroken(constructorId: string): void {
+    this.brokenConstructorLogos.update((current) => ({ ...current, [constructorId]: true }));
   }
 
   continue(): void {

@@ -4,7 +4,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap, take } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
-import { FantasyConstructor, FantasyDriver } from '../../core/models/f1.models';
+import { FantasyConstructor, FantasyDriver, SavedFantasyTeam } from '../../core/models/f1.models';
 
 interface WikipediaSummary {
   thumbnail?: {
@@ -272,16 +272,18 @@ export class FantasyComponent {
       return;
     }
 
-    const driverIds = this.selectedDrivers()
-      .filter((item): item is FantasyDriver => item !== null)
-      .map((driver) => driver.id);
+    const drivers = this.selectedDrivers().filter((item): item is FantasyDriver => item !== null);
+    const constructors = this.selectedConstructors().filter((item): item is FantasyConstructor => item !== null);
 
-    const constructorIds = this.selectedConstructors()
-      .filter((item): item is FantasyConstructor => item !== null)
-      .map((constructor) => constructor.id);
-
-    this.service.saveFantasyTeam(driverIds, constructorIds);
-    this.saveMessage.set('Equipa guardada com sucesso.');
+    this.service.saveFantasyTeam(drivers, constructors, this.usedBudget()).subscribe({
+      next: () => {
+        this.saveMessage.set('Equipa guardada com sucesso.');
+      },
+      error: () => {
+        this.saveMessage.set(null);
+        this.error.set('Não foi possível guardar a equipa.');
+      },
+    });
   }
 
   formatPrice(value: number): string {
@@ -330,13 +332,14 @@ export class FantasyComponent {
     forkJoin({
       drivers: this.service.getFantasyDriversData(),
       constructors: this.service.getFantasyConstructorsData(),
+      savedTeam: this.service.loadFantasyTeam().pipe(catchError(() => of({ team: null }))),
     })
       .pipe(take(1))
       .subscribe({
-        next: ({ drivers, constructors }) => {
+        next: ({ drivers, constructors, savedTeam }) => {
           this.drivers.set(drivers);
           this.constructors.set(constructors);
-          this.restoreSavedTeam(drivers, constructors);
+          this.restoreSavedTeam(drivers, constructors, savedTeam.team);
           this.isLoading.set(false);
         },
         error: () => {
@@ -346,15 +349,29 @@ export class FantasyComponent {
       });
   }
 
-  private restoreSavedTeam(drivers: FantasyDriver[], constructors: FantasyConstructor[]): void {
-    const saved = this.service.loadFantasyTeam();
+  private restoreSavedTeam(
+    drivers: FantasyDriver[],
+    constructors: FantasyConstructor[],
+    saved: SavedFantasyTeam | null,
+  ): void {
+    if (!saved) {
+      return;
+    }
+
+    const savedDriverIds = saved.drivers
+      .sort((a, b) => a.positionIndex - b.positionIndex)
+      .map((driver) => driver.externalId);
+    const savedConstructorIds = saved.constructors
+      .sort((a, b) => a.positionIndex - b.positionIndex)
+      .map((constructor) => constructor.externalId);
+
     const resolvedDrivers = Array.from({ length: 5 }, (_, idx) => {
-      const driverId = saved.drivers[idx];
+      const driverId = savedDriverIds[idx];
       return drivers.find((driver) => driver.id === driverId) ?? null;
     });
 
     const resolvedConstructors = Array.from({ length: 2 }, (_, idx) => {
-      const constructorId = saved.constructors[idx];
+      const constructorId = savedConstructorIds[idx];
       return constructors.find((constructor) => constructor.id === constructorId) ?? null;
     });
 

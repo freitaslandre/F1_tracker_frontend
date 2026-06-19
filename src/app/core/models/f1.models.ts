@@ -84,6 +84,30 @@ export interface FantasyConstructor {
   logo?: string;
 }
 
+export interface SavedFantasyItem {
+  id?: number;
+  itemType: 'driver' | 'constructor';
+  externalId: string;
+  name: string;
+  teamName?: string;
+  nationality?: string;
+  initials: string;
+  price: number;
+  points: number;
+  positionIndex: number;
+}
+
+export interface SavedFantasyTeam {
+  id: number;
+  userId: number;
+  budgetLimit: number;
+  budgetUsed: number;
+  createdAt: string;
+  updatedAt: string;
+  drivers: SavedFantasyItem[];
+  constructors: SavedFantasyItem[];
+}
+
 export interface FavoriteCircuit {
   id?: number;
   circuitId: string;

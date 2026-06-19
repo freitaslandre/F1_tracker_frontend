@@ -1,6 +1,6 @@
 <section class="auth-layout">
   <div class="auth-copy">
-    <p class="eyebrow">Fase 1 / Frontend mockado</p>
+    <p class="eyebrow">F1 Race Manager</p>
     <h1>Gere a tua temporada de F1 como um Race Manager pessoal.</h1>
     <p>
       Consulta resultados simulados no formato Jolpica, vota no Piloto do Dia e guarda os circuitos que queres seguir.
@@ -31,9 +31,13 @@
     </label>
 
     <button class="primary-button" type="submit">
-      {{ mode() === 'login' ? 'Entrar' : 'Criar conta' }}
+      {{ isSubmitting() ? 'A validar...' : mode() === 'login' ? 'Entrar' : 'Criar conta' }}
     </button>
 
-    <a class="text-link" routerLink="/dashboard">Entrar com sessao mockada depois do login</a>
+    @if (error()) {
+      <p class="form-error">{{ error() }}</p>
+    }
+
+    <a class="text-link" routerLink="/dashboard">Voltar ao dashboard</a>
   </form>
 </section>

@@ -11,4 +11,8 @@ import { F1Service } from '../../core/services/f1.service';
 export class ProfileComponent {
   protected readonly auth = inject(AuthService);
   protected readonly f1Service = inject(F1Service);
+
+  constructor() {
+    this.f1Service.refreshProfile().subscribe();
+  }
 }

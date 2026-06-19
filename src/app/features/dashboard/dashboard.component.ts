@@ -1,13 +1,12 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { NgIf } from '@angular/common';
 import { F1Service } from '../../core/services/f1.service';
 import { JolpicaRaceSummary } from '../../core/models/f1.models';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [RouterLink, NgIf],
+  imports: [RouterLink],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {

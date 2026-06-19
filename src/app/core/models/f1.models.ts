@@ -85,8 +85,22 @@ export interface FantasyConstructor {
 }
 
 export interface FavoriteCircuit {
+  id?: number;
   circuitId: string;
   circuitName: string;
+  locality?: string;
   country: string;
+  raceName?: string;
+  createdAt?: string;
+}
+
+export interface DriverVote {
+  id?: number;
+  raceSeason: string;
+  raceRound: string;
   raceName: string;
+  driverId: string;
+  driverName: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

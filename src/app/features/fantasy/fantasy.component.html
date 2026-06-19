@@ -35,65 +35,73 @@
     <div class="slots">
       <div class="slot-group">
         <p class="slot-label">Pilotos</p>
-        <div class="slot" *ngFor="let driver of selectedDrivers(); let idx = index" [class.occupied]="driver !== null">
-          <span class="slot-number">{{ idx + 1 }}</span>
+        @for (driver of selectedDrivers(); track $index; let idx = $index) {
+          <div class="slot" [class.occupied]="driver !== null">
+            <span class="slot-number">{{ idx + 1 }}</span>
 
-          @if (driver) {
-            @if (driverPhotoUrl(driver) | async; as photoUrl) {
-              <img class="slot-icon driver-image" [src]="photoUrl" [alt]="driver.name" />
+            @if (driver) {
+              @if (driverPhotoUrl(driver) | async; as photoUrl) {
+                <img class="slot-icon driver-image" [src]="photoUrl" [alt]="driver.name" />
+              } @else {
+                <div class="slot-icon">{{ driver.initials }}</div>
+              }
             } @else {
-              <div class="slot-icon">{{ driver.initials }}</div>
+              <div class="slot-icon empty">DR</div>
             }
-          } @else {
-            <div class="slot-icon empty">DR</div>
-          }
 
-          <div class="slot-body">
-            <h3>{{ driver?.name ?? 'Piloto vazio' }}</h3>
-            <p>{{ driver ? driver.team : 'Escolha um piloto para este slot' }}</p>
+            <div class="slot-body">
+              <h3>{{ driver?.name ?? 'Piloto vazio' }}</h3>
+              <p>{{ driver ? driver.team : 'Escolha um piloto para este slot' }}</p>
+            </div>
+
+            <div class="slot-meta">
+              <span>{{ driver ? formatPrice(driver.price) : 'Livre' }}</span>
+              <small>{{ driver ? driver.points + ' pts' : 'Obrigatório' }}</small>
+            </div>
+
+            @if (driver) {
+              <button class="remove-slot" type="button" (click)="removeDriver(idx)" aria-label="Remover piloto">✕</button>
+            }
           </div>
-
-          <div class="slot-meta">
-            <span>{{ driver ? formatPrice(driver.price) : 'Livre' }}</span>
-            <small>{{ driver ? driver.points + ' pts' : 'Obrigatório' }}</small>
-          </div>
-
-          <button *ngIf="driver" class="remove-slot" type="button" (click)="removeDriver(idx)" aria-label="Remover piloto">✕</button>
-        </div>
+        }
       </div>
 
       <div class="slot-group">
         <p class="slot-label">Construtores</p>
-        <div class="slot constructor-slot" *ngFor="let item of selectedConstructors(); let idx = index" [class.occupied]="item !== null">
-          <span class="slot-number">{{ idx + 1 }}</span>
+        @for (item of selectedConstructors(); track $index; let idx = $index) {
+          <div class="slot constructor-slot" [class.occupied]="item !== null">
+            <span class="slot-number">{{ idx + 1 }}</span>
 
-          @if (item) {
-            @if (constructorLogoUrl(item) | async; as logoUrl) {
-              <img
-                class="slot-icon constructor-logo"
-                [src]="logoUrl"
-                [alt]="item.name + ' logo'"
-                (error)="markConstructorLogoBroken(item.id)"
-              />
+            @if (item) {
+              @if (constructorLogoUrl(item) | async; as logoUrl) {
+                <img
+                  class="slot-icon constructor-logo"
+                  [src]="logoUrl"
+                  [alt]="item.name + ' logo'"
+                  (error)="markConstructorLogoBroken(item.id)"
+                />
+              } @else {
+                <div class="slot-icon">{{ item.initials }}</div>
+              }
             } @else {
-              <div class="slot-icon">{{ item.initials }}</div>
+              <div class="slot-icon empty">C</div>
             }
-          } @else {
-            <div class="slot-icon empty">C</div>
-          }
 
-          <div class="slot-body">
-            <h3>{{ item?.name ?? 'Construtor vazio' }}</h3>
-            <p>{{ item ? item.nationality : 'Escolha uma equipa para este slot' }}</p>
+            <div class="slot-body">
+              <h3>{{ item?.name ?? 'Construtor vazio' }}</h3>
+              <p>{{ item ? item.nationality : 'Escolha uma equipa para este slot' }}</p>
+            </div>
+
+            <div class="slot-meta">
+              <span>{{ item ? formatPrice(item.price) : 'Livre' }}</span>
+              <small>{{ item ? item.points + ' pts' : 'Obrigatório' }}</small>
+            </div>
+
+            @if (item) {
+              <button class="remove-slot" type="button" (click)="removeConstructor(idx)" aria-label="Remover construtor">✕</button>
+            }
           </div>
-
-          <div class="slot-meta">
-            <span>{{ item ? formatPrice(item.price) : 'Livre' }}</span>
-            <small>{{ item ? item.points + ' pts' : 'Obrigatório' }}</small>
-          </div>
-
-          <button *ngIf="item" class="remove-slot" type="button" (click)="removeConstructor(idx)" aria-label="Remover construtor">✕</button>
-        </div>
+        }
       </div>
     </div>
 
@@ -101,7 +109,9 @@
       <div>
         <p style="margin:0; color:#94a3b8">Estado da equipa</p>
         <strong>{{ isTeamValid() ? 'Equipa pronta para continuar' : 'Complete a equipa dentro do orçamento' }}</strong>
-        <p *ngIf="saveMessage()" style="margin:8px 0 0; color:#86efac; font-weight:700">{{ saveMessage() }}</p>
+        @if (saveMessage()) {
+          <p style="margin:8px 0 0; color:#86efac; font-weight:700">{{ saveMessage() }}</p>
+        }
       </div>
       <button class="continue-button" [disabled]="!isTeamValid()" type="button" (click)="continue()">Continue</button>
     </div>
@@ -123,12 +133,17 @@
       />
     </div>
 
-    <div *ngIf="isLoading()" style="color:#cbd5e1; margin-bottom:18px;">A carregar pilotos e equipas de 2026...</div>
-    <div *ngIf="error()" style="color:#fca5a5; margin-bottom:18px;">{{ error() }}</div>
+    @if (isLoading()) {
+      <div style="color:#cbd5e1; margin-bottom:18px;">A carregar pilotos e equipas de 2026...</div>
+    }
+    @if (error()) {
+      <div style="color:#fca5a5; margin-bottom:18px;">{{ error() }}</div>
+    }
 
     <div class="selection-list">
-      <ng-container *ngIf="activeTab() === 'drivers'; else constructorsList">
-        <article class="item-linha" *ngFor="let driver of filteredDrivers()">
+      @if (activeTab() === 'drivers') {
+        @for (driver of filteredDrivers(); track driver.id) {
+        <article class="item-linha">
           <div class="avatar-container">
             @if (driverPhotoUrl(driver) | async; as photoUrl) {
               <img class="avatar-circle driver-image" [src]="photoUrl" [alt]="driver.name" />
@@ -147,10 +162,10 @@
             <button type="button" [disabled]="!canAddDriver(driver)" (click)="addDriver(driver)">+</button>
           </div>
         </article>
-      </ng-container>
-
-      <ng-template #constructorsList>
-        <article class="item-linha" *ngFor="let constructor of filteredConstructors()">
+        }
+      } @else {
+        @for (constructor of filteredConstructors(); track constructor.id) {
+        <article class="item-linha">
           <div class="avatar-container">
             @if (constructorLogoUrl(constructor) | async; as logoUrl) {
               <img
@@ -174,7 +189,8 @@
             <button type="button" [disabled]="!canAddConstructor(constructor)" (click)="addConstructor(constructor)">+</button>
           </div>
         </article>
-      </ng-template>
+        }
+      }
     </div>
   </section>
 </div>

@@ -1,20 +1,26 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, from, of } from 'rxjs';
-import { map, concatMap, reduce, catchError, switchMap } from 'rxjs/operators';
-import { FavoriteCircuit, FantasyConstructor, FantasyDriver, JolpicaRaceDetail, JolpicaRaceSummary } from '../models/f1.models';
+import { map, concatMap, reduce, catchError, tap } from 'rxjs/operators';
+import { AuthUser } from './auth.service';
+import {
+  DriverVote,
+  FavoriteCircuit,
+  FantasyConstructor,
+  FantasyDriver,
+  JolpicaRaceDetail,
+  JolpicaRaceResult,
+  JolpicaRaceSummary,
+} from '../models/f1.models';
 
-const FAVORITES_KEY = 'f1rm_favorite_circuits';
-const VOTES_KEY = 'f1rm_driver_votes';
+const TOKEN_KEY = 'f1rm_token';
 const FANTASY_TEAM_KEY = 'f1rm_fantasy_team';
-const API_URL = 'https://api.jolpi.ca/ergast/f1';
+const BACKEND_URL = 'http://localhost:3000/api';
 
-interface JolpicaApiResponse {
-  MRData?: {
-    RaceTable?: {
-      Races?: JolpicaRaceDetail[];
-    };
-  };
+interface UserProfileResponse {
+  user: AuthUser;
+  favorites: FavoriteCircuit[];
+  votes: DriverVote[];
 }
 
 @Injectable({
@@ -22,8 +28,8 @@ interface JolpicaApiResponse {
 })
 export class F1Service {
   private readonly http = inject(HttpClient);
-  private readonly favoriteCircuits = signal<FavoriteCircuit[]>(this.readJson(FAVORITES_KEY, []));
-  private readonly driverVotes = signal<Record<string, string>>(this.readJson(VOTES_KEY, {}));
+  private readonly favoriteCircuits = signal<FavoriteCircuit[]>([]);
+  private readonly driverVotes = signal<Record<string, string>>({});
 
   readonly favorites = this.favoriteCircuits.asReadonly();
   readonly votes = this.driverVotes.asReadonly();
@@ -99,10 +105,7 @@ export class F1Service {
   }
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
-    // Use the "races" endpoint to get the full season schedule (not only completed results)
-    return this.http.get<JolpicaApiResponse>(`${API_URL}/${season}/races.json`).pipe(
-      map((res) => res?.MRData?.RaceTable?.Races ?? []),
-    );
+    return this.http.get<JolpicaRaceDetail[]>(`${BACKEND_URL}/f1/races?season=${season}`);
   }
 
   getCurrentSeasonRaces(): Observable<JolpicaRaceSummary[]> {
@@ -127,22 +130,7 @@ export class F1Service {
 
   getRaceDetail(season: number, round: string): Observable<JolpicaRaceDetail | undefined> {
     return this.fetchRaces(season).pipe(
-      switchMap((races) => {
-        const found = races.find((race) => race.round === round);
-        if (!found) return of(undefined);
-
-        // Fetch the selected round directly. The season-wide results endpoint is paginated,
-        // so later races may be missing from the first response page.
-        return this.http.get<JolpicaApiResponse>(`${API_URL}/${season}/${round}/results.json`).pipe(
-          map((res) => res?.MRData?.RaceTable?.Races?.[0]),
-          map((resultRace) =>
-            resultRace?.Results?.length
-              ? ({ ...found, Results: resultRace.Results } as JolpicaRaceDetail)
-              : (found as JolpicaRaceDetail),
-          ),
-          catchError(() => of(found as JolpicaRaceDetail)),
-        );
-      }),
+      map((races) => races.find((race) => race.round === round)),
     );
   }
 
@@ -158,10 +146,7 @@ export class F1Service {
 
     return from(seasons).pipe(
       concatMap((season) =>
-        this.http.get<JolpicaApiResponse>(`${API_URL}/${season}/races.json`).pipe(
-          map((res) => res?.MRData?.RaceTable?.Races ?? []),
-          catchError(() => of([])),
-        ),
+        this.fetchRaces(season).pipe(catchError(() => of([]))),
       ),
       reduce((acc: JolpicaRaceDetail[], races: JolpicaRaceDetail[]) => acc.concat(races), []),
       map((races) =>
@@ -184,31 +169,87 @@ export class F1Service {
     const favorite: FavoriteCircuit = {
       circuitId: race.Circuit.circuitId,
       circuitName: race.Circuit.circuitName,
+      locality: race.Circuit.Location.locality,
       country: race.Circuit.Location.country,
       raceName: race.raceName,
     };
 
     const exists = this.favoriteCircuits().some((item) => item.circuitId === favorite.circuitId);
-    const next = exists
-      ? this.favoriteCircuits().filter((item) => item.circuitId !== favorite.circuitId)
-      : [...this.favoriteCircuits(), favorite];
+    if (exists) {
+      this.http
+        .delete(`${BACKEND_URL}/f1/favorites/${encodeURIComponent(favorite.circuitId)}`, this.authOptions())
+        .subscribe({
+          next: () => {
+            this.favoriteCircuits.update((items) =>
+              items.filter((item) => item.circuitId !== favorite.circuitId),
+            );
+          },
+        });
+      return;
+    }
 
-    this.favoriteCircuits.set(next);
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
+    this.http
+      .post<FavoriteCircuit>(`${BACKEND_URL}/f1/favorites`, favorite, this.authOptions())
+      .subscribe({
+        next: (saved) => {
+          this.favoriteCircuits.update((items) => [...items, { ...favorite, ...saved }]);
+        },
+      });
   }
 
   isFavorite(circuitId: string): boolean {
     return this.favoriteCircuits().some((item) => item.circuitId === circuitId);
   }
 
-  voteDriver(round: string, driverId: string): void {
-    const next = { ...this.driverVotes(), [round]: driverId };
-    this.driverVotes.set(next);
-    localStorage.setItem(VOTES_KEY, JSON.stringify(next));
+  voteDriver(race: JolpicaRaceDetail, result: JolpicaRaceResult): void {
+    const driverName = `${result.Driver.givenName} ${result.Driver.familyName}`.trim();
+    const payload = {
+      raceSeason: race.season,
+      raceRound: race.round,
+      raceName: race.raceName,
+      driverId: result.Driver.driverId,
+      driverName,
+    };
+
+    this.http.post<DriverVote>(`${BACKEND_URL}/f1/vote`, payload, this.authOptions()).subscribe({
+      next: (saved) => {
+        this.driverVotes.update((votes) => ({
+          ...votes,
+          [this.voteKey(saved.raceSeason, saved.raceRound)]: saved.driverId,
+        }));
+      },
+    });
   }
 
-  selectedDriverForRound(round: string): string | undefined {
-    return this.driverVotes()[round];
+  selectedDriverForRace(race: JolpicaRaceDetail): string | undefined {
+    return this.driverVotes()[this.voteKey(race.season, race.round)];
+  }
+
+  refreshProfile(): Observable<UserProfileResponse> {
+    return this.http.get<UserProfileResponse>(`${BACKEND_URL}/user/profile`, this.authOptions()).pipe(
+      tap((profile) => {
+        this.favoriteCircuits.set(profile.favorites);
+        this.driverVotes.set(
+          profile.votes.reduce<Record<string, string>>((acc, vote) => {
+            acc[this.voteKey(vote.raceSeason, vote.raceRound)] = vote.driverId;
+            return acc;
+          }, {}),
+        );
+      }),
+    );
+  }
+
+  private authOptions(): { headers: HttpHeaders } {
+    const token = localStorage.getItem(TOKEN_KEY) ?? '';
+    return {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${token}`,
+      }),
+    };
+  }
+
+  private voteKey(season: string, round: string): string {
+    return `${season}-${round}`;
   }
 
   private readJson<T>(key: string, fallback: T): T {

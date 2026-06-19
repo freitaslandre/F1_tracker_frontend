@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
-import { JolpicaRaceDetail } from '../../core/models/f1.models';
+import { JolpicaRaceDetail, JolpicaRaceResult } from '../../core/models/f1.models';
 import { F1Service } from '../../core/services/f1.service';
 
 interface WikipediaSummary {
@@ -39,11 +39,11 @@ export class RaceDetailComponent {
 
   protected readonly selectedDriverId = computed(() => {
     const race = this.race();
-    return race ? this.f1Service.selectedDriverForRound(race.round) : undefined;
+    return race ? this.f1Service.selectedDriverForRace(race) : undefined;
   });
 
-  protected vote(race: JolpicaRaceDetail, driverId: string): void {
-    this.f1Service.voteDriver(race.round, driverId);
+  protected vote(race: JolpicaRaceDetail, result: JolpicaRaceResult): void {
+    this.f1Service.voteDriver(race, result);
   }
 
   protected toggleFavorite(race: JolpicaRaceDetail): void {

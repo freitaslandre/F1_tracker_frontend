@@ -16,18 +16,31 @@ export class AuthPageComponent {
   protected name = '';
   protected email = 'demo@f1manager.test';
   protected password = 'password';
+  protected readonly error = signal<string | null>(null);
+  protected readonly isSubmitting = signal(false);
 
   protected switchMode(mode: 'login' | 'register'): void {
     this.mode.set(mode);
   }
 
   protected submit(): void {
-    if (this.mode() === 'register') {
-      this.auth.register(this.name || 'F1 Fan', this.email, this.password);
-    } else {
-      this.auth.login(this.email, this.password);
-    }
+    this.error.set(null);
+    this.isSubmitting.set(true);
 
-    void this.router.navigateByUrl('/dashboard');
+    const request =
+      this.mode() === 'register'
+        ? this.auth.register(this.name || 'F1 Fan', this.email, this.password)
+        : this.auth.login(this.email, this.password);
+
+    request.subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        void this.router.navigateByUrl('/dashboard');
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        this.error.set(err?.error?.message ?? 'Não foi possível autenticar.');
+      },
+    });
   }
 }

@@ -19,8 +19,11 @@
       </select>
     </label>
 
-    <button class="secondary-button" *ngIf="!historyMode()" (click)="showHistory()">Mostrar História</button>
-    <button class="secondary-button" *ngIf="historyMode()" (click)="hideHistory()">Fechar História</button>
+    @if (!historyMode()) {
+      <button class="secondary-button" (click)="showHistory()">Mostrar História</button>
+    } @else {
+      <button class="secondary-button" (click)="hideHistory()">Fechar História</button>
+    }
     <span class="stat-pill">{{ races().length }} Grandes Prêmios</span>
   </div>
 </section>

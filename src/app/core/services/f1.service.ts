@@ -9,6 +9,7 @@ import {
   FantasyConstructor,
   FantasyDriver,
   FantasyLeaderboardEntry,
+  FantasyScoreResult,
   JolpicaRaceDetail,
   JolpicaRaceResult,
   JolpicaRaceSummary,
@@ -158,6 +159,14 @@ export class F1Service {
     return this.http
       .get<FantasyLeaderboardResponse>(`${BACKEND_URL}/fantasy/leaderboard`)
       .pipe(map((response) => response.leaderboard));
+  }
+
+  scoreFantasyRace(season: string, round: string): Observable<FantasyScoreResult> {
+    return this.http.post<FantasyScoreResult>(
+      `${BACKEND_URL}/fantasy/score-race`,
+      { season, round },
+      this.authOptions(),
+    );
   }
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {

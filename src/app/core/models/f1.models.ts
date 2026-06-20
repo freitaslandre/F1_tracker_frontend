@@ -115,10 +115,22 @@ export interface FantasyLeaderboardEntry {
   budgetUsed: number;
   updatedAt: string;
   basePoints: number;
+  racePoints: number;
+  totalPoints: number;
   projectedPoints: number;
+  scoredRaces: number;
   driverCount: number;
   constructorCount: number;
   isComplete: boolean;
+}
+
+export interface FantasyScoreResult {
+  race: {
+    season: string;
+    round: string;
+    raceName: string;
+  };
+  scoredTeams: number;
 }
 
 export interface FavoriteCircuit {

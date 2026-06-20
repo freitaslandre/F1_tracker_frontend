@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap, take } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
@@ -8,6 +8,7 @@ import {
   FantasyConstructor,
   FantasyDriver,
   FantasyLeaderboardEntry,
+  JolpicaRaceSummary,
   SavedFantasyTeam,
 } from '../../core/models/f1.models';
 
@@ -41,9 +42,10 @@ const CAPTAIN_KEY = 'f1rm_fantasy_captain';
   imports: [CommonModule],
   templateUrl: './fantasy.component.html',
 })
-export class FantasyComponent {
+export class FantasyComponent implements OnDestroy {
   private readonly service = inject(F1Service);
   private readonly http = inject(HttpClient);
+  private readonly clockInterval = window.setInterval(() => this.now.set(Date.now()), 60_000);
   private readonly driverPhotoCache = new Map<string, Observable<string | undefined>>();
   private readonly constructorLogoCache = new Map<string, Observable<string | undefined>>();
   private readonly driverWikiTitles: Record<string, string> = {
@@ -79,6 +81,9 @@ export class FantasyComponent {
   readonly searchTerm = signal('');
   readonly isLoading = signal(true);
   readonly error = signal<string | undefined>(undefined);
+  readonly isScoring = signal(false);
+  readonly now = signal(Date.now());
+  readonly seasonRaces = signal<JolpicaRaceSummary[]>([]);
 
   readonly drivers = signal<FantasyDriver[]>([]);
   readonly constructors = signal<FantasyConstructor[]>([]);
@@ -126,6 +131,40 @@ export class FantasyComponent {
   readonly isTeamValid = computed(
     () => this.selectedDriverCount() === 5 && this.selectedConstructorCount() === 2 && this.usedBudget() <= 100,
   );
+  readonly nextRace = computed(() => {
+    const now = this.now();
+    return this.seasonRaces()
+      .map((race) => ({ race, time: this.raceStartTime(race) }))
+      .filter((item) => item.time > now)
+      .sort((a, b) => a.time - b.time)[0]?.race ?? null;
+  });
+  readonly nextRaceCountdown = computed(() => {
+    const race = this.nextRace();
+    if (!race) {
+      return 'Temporada sem próximas corridas';
+    }
+
+    const diff = this.raceStartTime(race) - this.now();
+    if (diff <= 0) {
+      return 'Mercado fechado';
+    }
+
+    const days = Math.floor(diff / 86_400_000);
+    const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+    const minutes = Math.floor((diff % 3_600_000) / 60_000);
+
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    }
+    return `${hours}h ${minutes}m`;
+  });
+  readonly latestCompletedRace = computed(() => {
+    const now = this.now();
+    return this.seasonRaces()
+      .map((race) => ({ race, time: this.raceStartTime(race) }))
+      .filter((item) => item.time > 0 && item.time <= now)
+      .sort((a, b) => b.time - a.time)[0]?.race ?? null;
+  });
 
   readonly filteredDrivers = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -161,6 +200,10 @@ export class FantasyComponent {
   });
   constructor() {
     this.loadFantasyData();
+  }
+
+  ngOnDestroy(): void {
+    window.clearInterval(this.clockInterval);
   }
 
   selectTab(value: 'drivers' | 'constructors'): void {
@@ -325,6 +368,29 @@ export class FantasyComponent {
     });
   }
 
+  scoreLatestRace(): void {
+    const race = this.latestCompletedRace();
+    if (!race) {
+      this.feedbackMessage.set('Ainda não há corrida concluída para apurar.');
+      return;
+    }
+
+    this.isScoring.set(true);
+    this.service.scoreFantasyRace(race.season, race.round).pipe(take(1)).subscribe({
+      next: (result) => {
+        this.feedbackMessage.set(
+          `${result.race.raceName} apurada: ${result.scoredTeams} equipas receberam pontos reais.`,
+        );
+        this.isScoring.set(false);
+        this.loadLeaderboard();
+      },
+      error: () => {
+        this.feedbackMessage.set('Não foi possível apurar esta corrida. Confirma se já existem resultados.');
+        this.isScoring.set(false);
+      },
+    });
+  }
+
   setCaptain(driver: FantasyDriver | null): void {
     this.captainId.set(driver?.id ?? null);
     if (driver) {
@@ -439,13 +505,15 @@ export class FantasyComponent {
       constructors: this.service.getFantasyConstructorsData(),
       savedTeam: this.service.loadFantasyTeam().pipe(catchError(() => of({ team: null }))),
       leaderboard: this.service.getFantasyLeaderboard().pipe(catchError(() => of([]))),
+      races: this.service.getCurrentSeasonRaces().pipe(catchError(() => of([]))),
     })
       .pipe(take(1))
       .subscribe({
-        next: ({ drivers, constructors, savedTeam, leaderboard }) => {
+        next: ({ drivers, constructors, savedTeam, leaderboard, races }) => {
           this.drivers.set(drivers);
           this.constructors.set(constructors);
           this.leaderboard.set(leaderboard);
+          this.seasonRaces.set(races);
           this.restoreSavedTeam(drivers, constructors, savedTeam.team);
           this.isLoading.set(false);
         },
@@ -461,6 +529,13 @@ export class FantasyComponent {
       next: (leaderboard) => this.leaderboard.set(leaderboard),
       error: () => this.leaderboard.set([]),
     });
+  }
+
+  private raceStartTime(race: JolpicaRaceSummary): number {
+    const date = race.date || '';
+    const time = race.time || '00:00:00Z';
+    const parsed = new Date(`${date}T${time}`).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   private restoreSavedTeam(

@@ -12,6 +12,25 @@
 </section>
 
 <section class="fantasy-summary">
+  <article class="next-race-card">
+    <span>Próxima corrida</span>
+    @if (nextRace(); as race) {
+      <strong>{{ race.raceName }}</strong>
+      <small>
+        {{ race.date }} · {{ race.Circuit.Location.country }}
+      </small>
+    } @else {
+      <strong>A definir</strong>
+      <small>
+        Sem corrida futura no calendário
+      </small>
+    }
+  </article>
+  <article class="countdown-card">
+    <span>Mercado fecha em</span>
+    <strong>{{ nextRaceCountdown() }}</strong>
+    <small>Guarda alterações antes da corrida</small>
+  </article>
   <article>
     <span>Orçamento usado</span>
     <strong>{{ usedBudget().toFixed(1) }}M</strong>
@@ -22,14 +41,6 @@
   <article>
     <span>Disponível</span>
     <strong>{{ remainingBudget().toFixed(1) }}M</strong>
-  </article>
-  <article>
-    <span>Projeção</span>
-    <strong>{{ projectedPoints() }} pts</strong>
-  </article>
-  <article>
-    <span>DRS capitão</span>
-    <strong>{{ captain()?.initials ?? '—' }}</strong>
   </article>
 </section>
 
@@ -146,6 +157,20 @@
       </div>
       <button class="primary-button" [disabled]="!isTeamValid()" type="button" (click)="continue()">Guardar equipa</button>
     </footer>
+
+    <div class="scoring-action">
+      <div>
+        <span>Última corrida concluída</span>
+        @if (latestCompletedRace(); as race) {
+          <strong>{{ race.raceName }}</strong>
+        } @else {
+          <strong>Ainda sem corrida</strong>
+        }
+      </div>
+      <button class="secondary-button compact" type="button" [disabled]="isScoring() || !latestCompletedRace()" (click)="scoreLatestRace()">
+        {{ isScoring() ? 'A apurar...' : 'Apurar pontos' }}
+      </button>
+    </div>
 
     @if (saveMessage()) {
       <p class="save-message">{{ saveMessage() }}</p>
@@ -276,12 +301,16 @@
         <strong>{{ selectedConstructorItems().length }}/2</strong>
       </li>
       <li>
-        <span>Total base</span>
+        <span>Projeção da equipa</span>
         <strong>{{ basePoints() }} pts</strong>
       </li>
       <li>
         <span>Valor</span>
         <strong>{{ valueRating().toFixed(1) }} pts/M</strong>
+      </li>
+      <li>
+        <span>Sistema real</span>
+        <strong>Base underdog + corrida</strong>
       </li>
     </ul>
   </article>
@@ -310,8 +339,8 @@
       @for (entry of leaderboard(); track entry.userId; let idx = $index) {
         <li>
           <span class="rank-badge">{{ idx + 1 }}</span>
-          <span>{{ entry.userName }} · {{ entry.driverCount }}/5 pilotos</span>
-          <strong>{{ entry.projectedPoints }} pts</strong>
+          <span>{{ entry.userName }} · {{ entry.scoredRaces }} corridas</span>
+          <strong>{{ entry.totalPoints }} pts</strong>
         </li>
       }
       @if (leaderboard().length === 0) {

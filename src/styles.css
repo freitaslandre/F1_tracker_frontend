@@ -598,7 +598,7 @@ input {
 
 .fantasy-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: 1.35fr 1fr repeat(2, minmax(0, 0.8fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -632,6 +632,21 @@ input {
   display: block;
   margin-top: 6px;
   font-size: 1.55rem;
+}
+
+.fantasy-summary small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.next-race-card,
+.countdown-card {
+  border-color: rgba(255, 209, 102, 0.25) !important;
+}
+
+.countdown-card strong {
+  color: var(--gold);
 }
 
 .budget-track {
@@ -830,9 +845,26 @@ input {
   border-top: 1px solid var(--line);
 }
 
-.fantasy-actions div {
+.fantasy-actions div,
+.scoring-action div {
   display: grid;
   gap: 4px;
+}
+
+.scoring-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 209, 102, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 209, 102, 0.07);
+}
+
+.scoring-action span {
+  color: var(--muted);
 }
 
 .fantasy-actions .primary-button:disabled,

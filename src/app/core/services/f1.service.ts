@@ -274,23 +274,6 @@ export class F1Service {
     });
   }
 
-  removeVote(race: JolpicaRaceDetail): void {
-    this.http
-      .delete<void>(
-        `${BACKEND_URL}/f1/vote/${encodeURIComponent(race.season)}/${encodeURIComponent(race.round)}`,
-        this.authOptions(),
-      )
-      .subscribe({
-        next: () => {
-          this.driverVotes.update((votes) => {
-            const next = { ...votes };
-            delete next[this.voteKey(race.season, race.round)];
-            return next;
-          });
-        },
-      });
-  }
-
   selectedDriverForRace(race: JolpicaRaceDetail): string | undefined {
     return this.driverVotes()[this.voteKey(race.season, race.round)];
   }

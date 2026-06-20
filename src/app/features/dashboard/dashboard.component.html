@@ -12,9 +12,9 @@
   <div class="heading-actions">
     <label class="season-picker">
       <span>Temporada</span>
-      <select [value]="season()" (change)="selectSeason($event)">
+      <select [ngModel]="season()" (ngModelChange)="selectSeason($event)">
         @for (year of seasons; track year) {
-          <option [value]="year">{{ year }}</option>
+          <option [ngValue]="year">{{ year }}</option>
         }
       </select>
     </label>
@@ -176,7 +176,13 @@
           </div>
         </dl>
 
-        <a class="primary-button compact" [routerLink]="['/races', season(), race.round]">Ver detalhes</a>
+        <a
+          class="primary-button compact"
+          [routerLink]="['/races', season(), race.round]"
+          [queryParams]="{ returnSeason: season(), returnView: viewMode() }"
+        >
+          Ver detalhes
+        </a>
       </article>
     }
   </section>

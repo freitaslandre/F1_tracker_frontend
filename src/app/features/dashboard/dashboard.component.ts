@@ -1,26 +1,40 @@
 import { Component, effect, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { F1Service } from '../../core/services/f1.service';
 import { JolpicaRaceSummary, SeasonStandings } from '../../core/models/f1.models';
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [RouterLink],
+  imports: [FormsModule, RouterLink],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
   private readonly f1Service = inject(F1Service);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly currentYear = new Date().getUTCFullYear();
 
-  protected readonly seasons = Array.from({ length: new Date().getUTCFullYear() - 1950 + 1 }, (_, i) => new Date().getUTCFullYear() - i).reverse().reverse();
-  protected readonly season = signal<number>(new Date().getUTCFullYear());
+  protected readonly seasons = Array.from({ length: this.currentYear - 1950 + 1 }, (_, i) => this.currentYear - i).reverse().reverse();
+  protected readonly season = signal<number>(this.getInitialSeason());
   protected readonly races = signal<JolpicaRaceSummary[]>([]);
   protected readonly standings = signal<SeasonStandings | null>(null);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly viewMode = signal<'races' | 'standings'>('races');
+  protected readonly viewMode = signal<'races' | 'standings'>(this.getInitialViewMode());
 
   constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      const requestedSeason = Number(params.get('season'));
+      const requestedView = params.get('view') === 'standings' ? 'standings' : 'races';
+
+      if (Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear) {
+        this.season.set(requestedSeason);
+      }
+      this.viewMode.set(requestedView);
+    });
+
     effect((onCleanup) => {
       const seasonValue = this.season();
       const mode = this.viewMode();
@@ -58,15 +72,17 @@ export class DashboardComponent {
 
   protected showStandings(): void {
     this.viewMode.set('standings');
+    this.updateDashboardUrl();
   }
 
-  protected selectSeason(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    this.season.set(Number(target.value));
+  protected selectSeason(season: number): void {
+    this.season.set(Number(season));
+    this.updateDashboardUrl();
   }
 
   protected showRaces(): void {
     this.viewMode.set('races');
+    this.updateDashboardUrl();
   }
 
   protected isRaceCompleted(race: JolpicaRaceSummary): boolean {
@@ -78,5 +94,26 @@ export class DashboardComponent {
     } catch {
       return false;
     }
+  }
+
+  private getInitialSeason(): number {
+    const requestedSeason = Number(this.route.snapshot.queryParamMap.get('season'));
+    return Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear
+      ? requestedSeason
+      : this.currentYear;
+  }
+
+  private getInitialViewMode(): 'races' | 'standings' {
+    return this.route.snapshot.queryParamMap.get('view') === 'standings' ? 'standings' : 'races';
+  }
+
+  private updateDashboardUrl(): void {
+    void this.router.navigate(['/dashboard'], {
+      queryParams: {
+        season: this.season(),
+        view: this.viewMode(),
+      },
+      replaceUrl: true,
+    });
   }
 }

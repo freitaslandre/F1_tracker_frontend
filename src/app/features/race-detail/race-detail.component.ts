@@ -1,8 +1,8 @@
-import { AsyncPipe, Location } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap } from 'rxjs/operators';
 import { JolpicaRaceDetail, JolpicaRaceResult } from '../../core/models/f1.models';
@@ -22,7 +22,7 @@ interface WikipediaSummary {
 })
 export class RaceDetailComponent {
   private readonly route = inject(ActivatedRoute);
-  private readonly location = inject(Location);
+  private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly driverPhotoCache = new Map<string, Observable<string | undefined>>();
   protected readonly f1Service = inject(F1Service);
@@ -51,7 +51,16 @@ export class RaceDetailComponent {
   }
 
   protected goBack(): void {
-    this.location.back();
+    const race = this.race();
+    const returnSeason = this.route.snapshot.queryParamMap.get('returnSeason') ?? race?.season ?? String(new Date().getUTCFullYear());
+    const returnView = this.route.snapshot.queryParamMap.get('returnView') ?? 'races';
+
+    void this.router.navigate(['/dashboard'], {
+      queryParams: {
+        season: returnSeason,
+        view: returnView,
+      },
+    });
   }
 
   protected driverPhotoUrl(driverUrl: string): Observable<string | undefined> {

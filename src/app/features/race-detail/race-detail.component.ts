@@ -46,6 +46,10 @@ export class RaceDetailComponent {
     this.f1Service.voteDriver(race, result);
   }
 
+  protected removeVote(race: JolpicaRaceDetail): void {
+    this.f1Service.removeVote(race);
+  }
+
   protected toggleFavorite(race: JolpicaRaceDetail): void {
     this.f1Service.toggleFavoriteCircuit(race);
   }

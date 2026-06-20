@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, from, of } from 'rxjs';
 import { map, concatMap, reduce, catchError, tap } from 'rxjs/operators';
@@ -17,9 +17,8 @@ import {
   SeasonStandings,
 } from '../models/f1.models';
 
-const TOKEN_KEY = 'f1rm_token';
-const FANTASY_TEAM_KEY = 'f1rm_fantasy_team';
 const BACKEND_URL = 'http://localhost:3000/api';
+const CREDENTIAL_OPTIONS = { withCredentials: true };
 
 interface UserProfileResponse {
   user: AuthUser;
@@ -102,10 +101,6 @@ export class F1Service {
     constructors: FantasyConstructor[],
     budgetUsed: number,
   ): Observable<FantasyTeamResponse> {
-    const localTeam = this.buildLocalFantasyTeam(drivers, constructors, budgetUsed);
-    localStorage.setItem(FANTASY_TEAM_KEY, JSON.stringify(localTeam));
-    this.fantasyTeamState.set(localTeam);
-
     return this.http.put<FantasyTeamResponse>(
       `${BACKEND_URL}/fantasy/team`,
       {
@@ -116,44 +111,20 @@ export class F1Service {
       },
       this.authOptions(),
     ).pipe(
-      tap((response) => {
-        if (response.team) {
-          localStorage.setItem(FANTASY_TEAM_KEY, JSON.stringify(response.team));
-        }
-        this.fantasyTeamState.set(response.team);
-      }),
-      catchError(() => of({ team: localTeam })),
+      tap((response) => this.fantasyTeamState.set(response.team)),
     );
   }
 
   loadFantasyTeam(): Observable<FantasyTeamResponse> {
-    const localTeam = this.readLocalFantasyTeam();
     return this.http
       .get<FantasyTeamResponse>(`${BACKEND_URL}/fantasy/team`, this.authOptions())
-      .pipe(
-        tap((response) => {
-          if (response.team) {
-            localStorage.setItem(FANTASY_TEAM_KEY, JSON.stringify(response.team));
-          }
-          this.fantasyTeamState.set(response.team);
-        }),
-        catchError(() => {
-          this.fantasyTeamState.set(localTeam);
-          return of({ team: localTeam });
-        }),
-      );
+      .pipe(tap((response) => this.fantasyTeamState.set(response.team)));
   }
 
   deleteFantasyTeam(): Observable<void> {
-    localStorage.removeItem(FANTASY_TEAM_KEY);
-    this.fantasyTeamState.set(null);
-
     return this.http
       .delete<void>(`${BACKEND_URL}/fantasy/team`, this.authOptions())
-      .pipe(
-        tap(() => this.fantasyTeamState.set(null)),
-        catchError(() => of(undefined)),
-      );
+      .pipe(tap(() => this.fantasyTeamState.set(null)));
   }
 
   getFantasyLeaderboard(): Observable<FantasyLeaderboardEntry[]> {
@@ -310,67 +281,12 @@ export class F1Service {
     );
   }
 
-  private authOptions(): { headers: HttpHeaders } {
-    const token = localStorage.getItem(TOKEN_KEY) ?? '';
-    return {
-      headers: new HttpHeaders({
-        Authorization: `Bearer ${token}`,
-      }),
-    };
+  private authOptions(): { withCredentials: boolean } {
+    return CREDENTIAL_OPTIONS;
   }
 
   private voteKey(season: string, round: string): string {
     return `${season}-${round}`;
-  }
-
-  private buildLocalFantasyTeam(
-    drivers: FantasyDriver[],
-    constructors: FantasyConstructor[],
-    budgetUsed: number,
-  ): SavedFantasyTeam {
-    const now = new Date().toISOString();
-    return {
-      id: 1,
-      userId: 1,
-      budgetLimit: 100,
-      budgetUsed,
-      createdAt: now,
-      updatedAt: now,
-      drivers: drivers.map((driver, index) => ({
-        itemType: 'driver',
-        externalId: driver.id,
-        name: driver.name,
-        teamName: driver.team,
-        initials: driver.initials,
-        price: driver.price,
-        points: driver.points,
-        positionIndex: index,
-      })),
-      constructors: constructors.map((constructor, index) => ({
-        itemType: 'constructor',
-        externalId: constructor.id,
-        name: constructor.name,
-        nationality: constructor.nationality,
-        initials: constructor.initials,
-        price: constructor.price,
-        points: constructor.points,
-        positionIndex: index,
-      })),
-    };
-  }
-
-  private readLocalFantasyTeam(): SavedFantasyTeam | null {
-    const raw = localStorage.getItem(FANTASY_TEAM_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(raw) as SavedFantasyTeam;
-    } catch {
-      localStorage.removeItem(FANTASY_TEAM_KEY);
-      return null;
-    }
   }
 
 }

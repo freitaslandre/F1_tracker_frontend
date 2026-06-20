@@ -34,8 +34,6 @@ interface WikipediaSearchResponse {
   };
 }
 
-const CAPTAIN_KEY = 'f1rm_fantasy_captain';
-
 @Component({
   standalone: true,
   selector: 'app-fantasy',
@@ -90,7 +88,7 @@ export class FantasyComponent implements OnDestroy {
   readonly selectedDrivers = signal<(FantasyDriver | null)[]>(Array.from({ length: 5 }, () => null));
   readonly selectedConstructors = signal<(FantasyConstructor | null)[]>(Array.from({ length: 2 }, () => null));
   readonly brokenConstructorLogos = signal<Record<string, boolean>>({});
-  readonly captainId = signal<string | null>(localStorage.getItem(CAPTAIN_KEY));
+  readonly captainId = signal<string | null>(null);
   readonly leaderboard = signal<FantasyLeaderboardEntry[]>([]);
   readonly feedbackMessage = signal('Escolhe 5 pilotos e 2 construtores dentro do orçamento de 100M.');
 
@@ -393,11 +391,6 @@ export class FantasyComponent implements OnDestroy {
 
   setCaptain(driver: FantasyDriver | null): void {
     this.captainId.set(driver?.id ?? null);
-    if (driver) {
-      localStorage.setItem(CAPTAIN_KEY, driver.id);
-      return;
-    }
-    localStorage.removeItem(CAPTAIN_KEY);
   }
 
   constructorLogoUrl(constructor: FantasyConstructor | null): Observable<string | undefined> {

@@ -15,6 +15,8 @@ export class AppComponent {
   private readonly router = inject(Router);
 
   constructor() {
+    this.auth.checkSession().subscribe();
+
     effect(() => {
       if (this.auth.isAuthenticated()) {
         this.f1Service.refreshProfile().subscribe();
@@ -23,7 +25,8 @@ export class AppComponent {
   }
 
   protected logout(): void {
-    this.auth.logout();
-    void this.router.navigateByUrl('/auth');
+    this.auth.logout().subscribe({
+      next: () => void this.router.navigateByUrl('/auth'),
+    });
   }
 }

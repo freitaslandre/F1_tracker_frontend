@@ -34,7 +34,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -214,6 +215,25 @@ label {
 input {
   width: 100%;
   min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0b0f17;
+  color: var(--text);
+}
+
+.dashboard-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(150px, 0.45fr) minmax(160px, 0.5fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 18px;
+}
+
+.dashboard-filters input,
+.dashboard-filters select {
+  min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
@@ -539,6 +559,10 @@ input {
 
   .stat-pill {
     width: fit-content;
+  }
+
+  .dashboard-filters {
+    grid-template-columns: 1fr;
   }
 }
 

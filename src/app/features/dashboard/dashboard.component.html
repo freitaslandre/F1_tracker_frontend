@@ -1,10 +1,10 @@
 <section class="page-heading">
   <div>
-    @if (historyMode()) {
-      <p class="eyebrow">Histórico de corridas</p>
-      <h1>História completa</h1>
+    @if (viewMode() === 'standings') {
+      <p class="eyebrow">Temporada {{ seasonLabel() }}</p>
+      <h1>Classificações</h1>
     } @else {
-      <p class="eyebrow">Temporada {{ season() }}</p>
+      <p class="eyebrow">Temporada {{ seasonLabel() }}</p>
       <h1>Dashboard de corridas</h1>
     }
   </div>
@@ -12,21 +12,59 @@
   <div class="heading-actions">
     <label class="season-picker">
       <span>Temporada</span>
-      <select [value]="season()" (change)="selectSeason($event)" [disabled]="historyMode()">
+      <select [ngModel]="season()" (ngModelChange)="selectSeason($event)">
+        <option [ngValue]="'all-time'">All-time</option>
         @for (year of seasons; track year) {
-          <option [value]="year">{{ year }}</option>
+          <option [ngValue]="year">{{ year }}</option>
         }
       </select>
     </label>
 
-    @if (!historyMode()) {
-      <button class="secondary-button" (click)="showHistory()">Mostrar História</button>
-    } @else {
-      <button class="secondary-button" (click)="hideHistory()">Fechar História</button>
+    @if (viewMode() === 'races' && season() !== 'all-time') {
+      <button class="secondary-button" (click)="showStandings()">Classificações</button>
+    } @else if (viewMode() === 'standings') {
+      <button class="secondary-button" (click)="showRaces()">Corridas</button>
     }
-    <span class="stat-pill">{{ races().length }} Grandes Prêmios</span>
+    <span class="stat-pill">
+      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prêmios' }}
+    </span>
   </div>
 </section>
+
+@if (viewMode() === 'races') {
+  <section class="panel dashboard-filters">
+    <label>
+      <span>Pesquisar</span>
+      <input
+        type="search"
+        placeholder="Grande Prêmio, circuito, cidade ou país"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+    </label>
+
+    <label>
+      <span>Estado</span>
+      <select [ngModel]="raceStatusFilter()" (ngModelChange)="raceStatusFilter.set($event)">
+        <option value="all">Todas</option>
+        <option value="completed">Concluídas</option>
+        <option value="upcoming">Futuras</option>
+      </select>
+    </label>
+
+    <label>
+      <span>País</span>
+      <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)">
+        <option value="all">Todos</option>
+        @for (country of availableCountries(); track country) {
+          <option [value]="country">{{ country }}</option>
+        }
+      </select>
+    </label>
+
+    <button class="secondary-button compact" type="button" (click)="clearFilters()">Limpar</button>
+  </section>
+}
 
 @if (error()) {
   <section class="empty-state compact-empty">
@@ -35,17 +73,144 @@
   </section>
 } @else if (isLoading()) {
   <section class="empty-state compact-empty">
-    <h2>Carregando corridas...</h2>
-    <p>Aguarde enquanto buscamos os resultados da temporada {{ season() }}.</p>
+    <h2>A carregar dados...</h2>
+    <p>Aguarde enquanto buscamos {{ season() === 'all-time' ? 'todas as temporadas' : 'a temporada ' + season() }}.</p>
   </section>
+} @else if (viewMode() === 'standings') {
+  @if (standings(); as standings) {
+    <section class="race-grid">
+      <article class="race-card">
+        <span class="status-badge completed">Campeão</span>
+        <div>
+          <p class="round">Pilotos</p>
+          <h2>
+            {{ standings.driverChampion?.Driver?.givenName }}
+            {{ standings.driverChampion?.Driver?.familyName }}
+          </h2>
+          <p>{{ standings.driverChampion?.Constructors?.[0]?.name ?? 'Construtor não disponível' }}</p>
+        </div>
+        <dl class="meta-list">
+          <div>
+            <dt>Pontos</dt>
+            <dd>{{ standings.driverChampion?.points }}</dd>
+          </div>
+          <div>
+            <dt>Vitórias</dt>
+            <dd>{{ standings.driverChampion?.wins }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="race-card">
+        <span class="status-badge completed">Campeão</span>
+        <div>
+          <p class="round">Construtores</p>
+          <h2>{{ standings.constructorChampion?.Constructor?.name }}</h2>
+          <p>{{ standings.constructorChampion?.Constructor?.nationality }}</p>
+        </div>
+        <dl class="meta-list">
+          <div>
+            <dt>Pontos</dt>
+            <dd>{{ standings.constructorChampion?.points }}</dd>
+          </div>
+          <div>
+            <dt>Vitórias</dt>
+            <dd>{{ standings.constructorChampion?.wins }}</dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <h2>Classificação de pilotos</h2>
+        <span>{{ standings.driverStandings.length }} pilotos</span>
+      </div>
+      <div class="results-table">
+        <div class="table-row table-head">
+          <span>Pos</span>
+          <span>Piloto</span>
+          <span>Equipa</span>
+          <span>Vitórias</span>
+          <span>Pontos</span>
+        </div>
+        @for (item of standings.driverStandings; track item.Driver.driverId) {
+          <div class="table-row">
+            <span class="position">{{ item.position }}</span>
+            <span class="driver-cell">
+              @if (wikipediaImageUrl(item.Driver.url) | async; as photoUrl) {
+                <img
+                  class="driver-photo"
+                  [src]="photoUrl"
+                  [alt]="item.Driver.givenName + ' ' + item.Driver.familyName"
+                />
+              } @else {
+                <span class="driver-photo initials">{{ initials(item.Driver.givenName, item.Driver.familyName) }}</span>
+              }
+              <strong>{{ item.Driver.givenName }} {{ item.Driver.familyName }}</strong>
+            </span>
+            <span>{{ item.Constructors[0]?.name ?? '-' }}</span>
+            <span>{{ item.wins }}</span>
+            <span>{{ item.points }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">
+        <h2>Classificação de construtores</h2>
+        <span>{{ standings.constructorStandings.length }} equipas</span>
+      </div>
+      <div class="results-table">
+        <div class="table-row table-head">
+          <span>Pos</span>
+          <span>Construtor</span>
+          <span>Nacionalidade</span>
+          <span>Vitórias</span>
+          <span>Pontos</span>
+        </div>
+        @for (item of standings.constructorStandings; track item.Constructor.constructorId) {
+          <div class="table-row">
+            <span class="position">{{ item.position }}</span>
+            <span class="driver-cell">
+              @if (wikipediaImageUrl(item.Constructor.url) | async; as photoUrl) {
+                <img
+                  class="driver-photo"
+                  [src]="photoUrl"
+                  [alt]="item.Constructor.name"
+                />
+              } @else {
+                <span class="driver-photo initials">{{ initials(item.Constructor.name) }}</span>
+              }
+              <strong>{{ item.Constructor.name }}</strong>
+            </span>
+            <span>{{ item.Constructor.nationality }}</span>
+            <span>{{ item.wins }}</span>
+            <span>{{ item.points }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  } @else {
+    <section class="empty-state compact-empty">
+      <h2>Classificações não encontradas para {{ season() }}</h2>
+      <p>Tente uma temporada anterior.</p>
+    </section>
+  }
 } @else if (races().length === 0) {
   <section class="empty-state compact-empty">
-    <h2>Nenhuma corrida encontrada para {{ season() }}</h2>
+    <h2>Nenhuma corrida encontrada para {{ seasonLabel() }}</h2>
     <p>Tente outra temporada anterior ou avise se os dados não estiverem disponíveis.</p>
+  </section>
+} @else if (filteredRaces().length === 0) {
+  <section class="empty-state compact-empty">
+    <h2>Nenhuma corrida corresponde aos filtros.</h2>
+    <p>Altere a pesquisa, o estado ou o país para ver mais resultados.</p>
   </section>
 } @else {
   <section class="race-grid">
-    @for (race of races(); track race.season + '-' + race.round) {
+    @for (race of filteredRaces(); track race.season + '-' + race.round) {
       <article class="race-card">
         @if (isRaceCompleted(race)) {
           <span class="status-badge completed">Concluída</span>
@@ -74,7 +239,13 @@
           </div>
         </dl>
 
-        <a class="primary-button compact" [routerLink]="['/races', historyMode() ? race.season : season(), race.round]">Ver detalhes</a>
+        <a
+          class="primary-button compact"
+          [routerLink]="['/races', race.season, race.round]"
+          [queryParams]="{ returnSeason: season(), returnView: viewMode() }"
+        >
+          Ver detalhes
+        </a>
       </article>
     }
   </section>

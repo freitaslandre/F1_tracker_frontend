@@ -1,10 +1,10 @@
 <section class="page-heading">
   <div>
     @if (viewMode() === 'standings') {
-      <p class="eyebrow">Temporada {{ season() }}</p>
+      <p class="eyebrow">Temporada {{ seasonLabel() }}</p>
       <h1>Classificações</h1>
     } @else {
-      <p class="eyebrow">Temporada {{ season() }}</p>
+      <p class="eyebrow">Temporada {{ seasonLabel() }}</p>
       <h1>Dashboard de corridas</h1>
     }
   </div>
@@ -13,22 +13,58 @@
     <label class="season-picker">
       <span>Temporada</span>
       <select [ngModel]="season()" (ngModelChange)="selectSeason($event)">
+        <option [ngValue]="'all-time'">All-time</option>
         @for (year of seasons; track year) {
           <option [ngValue]="year">{{ year }}</option>
         }
       </select>
     </label>
 
-    @if (viewMode() === 'races') {
+    @if (viewMode() === 'races' && season() !== 'all-time') {
       <button class="secondary-button" (click)="showStandings()">Classificações</button>
-    } @else {
+    } @else if (viewMode() === 'standings') {
       <button class="secondary-button" (click)="showRaces()">Corridas</button>
     }
     <span class="stat-pill">
-      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : races().length + ' Grandes Prêmios' }}
+      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prêmios' }}
     </span>
   </div>
 </section>
+
+@if (viewMode() === 'races') {
+  <section class="panel dashboard-filters">
+    <label>
+      <span>Pesquisar</span>
+      <input
+        type="search"
+        placeholder="Grande Prêmio, circuito, cidade ou país"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+    </label>
+
+    <label>
+      <span>Estado</span>
+      <select [ngModel]="raceStatusFilter()" (ngModelChange)="raceStatusFilter.set($event)">
+        <option value="all">Todas</option>
+        <option value="completed">Concluídas</option>
+        <option value="upcoming">Futuras</option>
+      </select>
+    </label>
+
+    <label>
+      <span>País</span>
+      <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)">
+        <option value="all">Todos</option>
+        @for (country of availableCountries(); track country) {
+          <option [value]="country">{{ country }}</option>
+        }
+      </select>
+    </label>
+
+    <button class="secondary-button compact" type="button" (click)="clearFilters()">Limpar</button>
+  </section>
+}
 
 @if (error()) {
   <section class="empty-state compact-empty">
@@ -38,7 +74,7 @@
 } @else if (isLoading()) {
   <section class="empty-state compact-empty">
     <h2>A carregar dados...</h2>
-    <p>Aguarde enquanto buscamos a temporada {{ season() }}.</p>
+    <p>Aguarde enquanto buscamos {{ season() === 'all-time' ? 'todas as temporadas' : 'a temporada ' + season() }}.</p>
   </section>
 } @else if (viewMode() === 'standings') {
   @if (standings(); as standings) {
@@ -164,12 +200,17 @@
   }
 } @else if (races().length === 0) {
   <section class="empty-state compact-empty">
-    <h2>Nenhuma corrida encontrada para {{ season() }}</h2>
+    <h2>Nenhuma corrida encontrada para {{ seasonLabel() }}</h2>
     <p>Tente outra temporada anterior ou avise se os dados não estiverem disponíveis.</p>
+  </section>
+} @else if (filteredRaces().length === 0) {
+  <section class="empty-state compact-empty">
+    <h2>Nenhuma corrida corresponde aos filtros.</h2>
+    <p>Altere a pesquisa, o estado ou o país para ver mais resultados.</p>
   </section>
 } @else {
   <section class="race-grid">
-    @for (race of races(); track race.season + '-' + race.round) {
+    @for (race of filteredRaces(); track race.season + '-' + race.round) {
       <article class="race-card">
         @if (isRaceCompleted(race)) {
           <span class="status-badge completed">Concluída</span>
@@ -200,7 +241,7 @@
 
         <a
           class="primary-button compact"
-          [routerLink]="['/races', season(), race.round]"
+          [routerLink]="['/races', race.season, race.round]"
           [queryParams]="{ returnSeason: season(), returnView: viewMode() }"
         >
           Ver detalhes

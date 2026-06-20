@@ -101,7 +101,18 @@
         @for (item of standings.driverStandings; track item.Driver.driverId) {
           <div class="table-row">
             <span class="position">{{ item.position }}</span>
-            <span><strong>{{ item.Driver.givenName }} {{ item.Driver.familyName }}</strong></span>
+            <span class="driver-cell">
+              @if (wikipediaImageUrl(item.Driver.url) | async; as photoUrl) {
+                <img
+                  class="driver-photo"
+                  [src]="photoUrl"
+                  [alt]="item.Driver.givenName + ' ' + item.Driver.familyName"
+                />
+              } @else {
+                <span class="driver-photo initials">{{ initials(item.Driver.givenName, item.Driver.familyName) }}</span>
+              }
+              <strong>{{ item.Driver.givenName }} {{ item.Driver.familyName }}</strong>
+            </span>
             <span>{{ item.Constructors[0]?.name ?? '-' }}</span>
             <span>{{ item.wins }}</span>
             <span>{{ item.points }}</span>
@@ -126,7 +137,18 @@
         @for (item of standings.constructorStandings; track item.Constructor.constructorId) {
           <div class="table-row">
             <span class="position">{{ item.position }}</span>
-            <span><strong>{{ item.Constructor.name }}</strong></span>
+            <span class="driver-cell">
+              @if (wikipediaImageUrl(item.Constructor.url) | async; as photoUrl) {
+                <img
+                  class="driver-photo"
+                  [src]="photoUrl"
+                  [alt]="item.Constructor.name"
+                />
+              } @else {
+                <span class="driver-photo initials">{{ initials(item.Constructor.name) }}</span>
+              }
+              <strong>{{ item.Constructor.name }}</strong>
+            </span>
             <span>{{ item.Constructor.nationality }}</span>
             <span>{{ item.wins }}</span>
             <span>{{ item.points }}</span>

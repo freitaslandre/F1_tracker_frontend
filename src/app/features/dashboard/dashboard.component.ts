@@ -1,20 +1,35 @@
+import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { catchError, map, shareReplay } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
 import { JolpicaRaceSummary, SeasonStandings } from '../../core/models/f1.models';
+
+interface WikipediaSummary {
+  thumbnail?: {
+    source?: string;
+  };
+  originalimage?: {
+    source?: string;
+  };
+}
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [FormsModule, RouterLink],
+  imports: [AsyncPipe, FormsModule, RouterLink],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
   private readonly f1Service = inject(F1Service);
+  private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly currentYear = new Date().getUTCFullYear();
+  private readonly imageCache = new Map<string, Observable<string | undefined>>();
 
   protected readonly seasons = Array.from({ length: this.currentYear - 1950 + 1 }, (_, i) => this.currentYear - i).reverse().reverse();
   protected readonly season = signal<number>(this.getInitialSeason());
@@ -96,6 +111,42 @@ export class DashboardComponent {
     }
   }
 
+  protected wikipediaImageUrl(url: string | undefined): Observable<string | undefined> {
+    if (!url) {
+      return of(undefined);
+    }
+
+    const cached = this.imageCache.get(url);
+    if (cached) {
+      return cached;
+    }
+
+    const title = this.wikipediaTitleFromUrl(url);
+    if (!title) {
+      return of(undefined);
+    }
+
+    const imageUrl = this.http
+      .get<WikipediaSummary>(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`)
+      .pipe(
+        map((summary) => summary.thumbnail?.source ?? summary.originalimage?.source),
+        catchError(() => of(undefined)),
+        shareReplay({ bufferSize: 1, refCount: true }),
+      );
+
+    this.imageCache.set(url, imageUrl);
+    return imageUrl;
+  }
+
+  protected initials(...parts: string[]): string {
+    return parts
+      .filter(Boolean)
+      .map((part) => part.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
   private getInitialSeason(): number {
     const requestedSeason = Number(this.route.snapshot.queryParamMap.get('season'));
     return Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear
@@ -115,5 +166,15 @@ export class DashboardComponent {
       },
       replaceUrl: true,
     });
+  }
+
+  private wikipediaTitleFromUrl(url: string): string | undefined {
+    try {
+      const parsedUrl = new URL(url);
+      const title = parsedUrl.pathname.split('/wiki/')[1];
+      return title ? encodeURIComponent(decodeURIComponent(title)) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 }

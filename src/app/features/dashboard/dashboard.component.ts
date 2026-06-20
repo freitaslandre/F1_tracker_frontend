@@ -17,6 +17,8 @@ interface WikipediaSummary {
   };
 }
 
+type SeasonSelection = number | 'all-time';
+
 @Component({
   standalone: true,
   selector: 'app-dashboard',
@@ -32,7 +34,8 @@ export class DashboardComponent {
   private readonly imageCache = new Map<string, Observable<string | undefined>>();
 
   protected readonly seasons = Array.from({ length: this.currentYear - 1950 + 1 }, (_, i) => this.currentYear - i).reverse().reverse();
-  protected readonly season = signal<number>(this.getInitialSeason());
+  protected readonly season = signal<SeasonSelection>(this.getInitialSeason());
+  protected readonly seasonLabel = computed(() => this.season() === 'all-time' ? 'All-time' : String(this.season()));
   protected readonly races = signal<JolpicaRaceSummary[]>([]);
   protected readonly standings = signal<SeasonStandings | null>(null);
   protected readonly isLoading = signal<boolean>(false);
@@ -69,8 +72,15 @@ export class DashboardComponent {
 
   constructor() {
     this.route.queryParamMap.subscribe((params) => {
-      const requestedSeason = Number(params.get('season'));
+      const requestedSeasonParam = params.get('season');
+      const requestedSeason = Number(requestedSeasonParam);
       const requestedView = params.get('view') === 'standings' ? 'standings' : 'races';
+
+      if (requestedSeasonParam === 'all-time') {
+        this.season.set('all-time');
+        this.viewMode.set('races');
+        return;
+      }
 
       if (Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear) {
         this.season.set(requestedSeason);
@@ -86,7 +96,7 @@ export class DashboardComponent {
 
       const sub =
         mode === 'standings'
-          ? this.f1Service.getSeasonStandings(seasonValue).subscribe({
+          ? this.f1Service.getSeasonStandings(Number(seasonValue)).subscribe({
               next: (standings) => {
                 this.standings.set(standings);
                 this.isLoading.set(false);
@@ -97,7 +107,10 @@ export class DashboardComponent {
                 this.isLoading.set(false);
               },
             })
-          : this.f1Service.getSeasonRaces(seasonValue).subscribe({
+          : (seasonValue === 'all-time'
+              ? this.f1Service.getAllRacesHistory()
+              : this.f1Service.getSeasonRaces(seasonValue)
+            ).subscribe({
               next: (races) => {
                 this.races.set(races);
                 this.isLoading.set(false);
@@ -114,12 +127,18 @@ export class DashboardComponent {
   }
 
   protected showStandings(): void {
+    if (this.season() === 'all-time') {
+      this.season.set(this.currentYear);
+    }
     this.viewMode.set('standings');
     this.updateDashboardUrl();
   }
 
-  protected selectSeason(season: number): void {
-    this.season.set(Number(season));
+  protected selectSeason(season: SeasonSelection): void {
+    this.season.set(season === 'all-time' ? 'all-time' : Number(season));
+    if (season === 'all-time') {
+      this.viewMode.set('races');
+    }
     this.clearFilters();
     this.updateDashboardUrl();
   }
@@ -182,8 +201,13 @@ export class DashboardComponent {
       .toUpperCase();
   }
 
-  private getInitialSeason(): number {
-    const requestedSeason = Number(this.route.snapshot.queryParamMap.get('season'));
+  private getInitialSeason(): SeasonSelection {
+    const requestedSeasonParam = this.route.snapshot.queryParamMap.get('season');
+    if (requestedSeasonParam === 'all-time') {
+      return 'all-time';
+    }
+
+    const requestedSeason = Number(requestedSeasonParam);
     return Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear
       ? requestedSeason
       : this.currentYear;

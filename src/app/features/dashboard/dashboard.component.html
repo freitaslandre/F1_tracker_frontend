@@ -1,10 +1,10 @@
 <section class="page-heading">
   <div>
     @if (viewMode() === 'standings') {
-      <p class="eyebrow">Temporada {{ season() }}</p>
+      <p class="eyebrow">Temporada {{ seasonLabel() }}</p>
       <h1>Classificações</h1>
     } @else {
-      <p class="eyebrow">Temporada {{ season() }}</p>
+      <p class="eyebrow">Temporada {{ seasonLabel() }}</p>
       <h1>Dashboard de corridas</h1>
     }
   </div>
@@ -13,15 +13,16 @@
     <label class="season-picker">
       <span>Temporada</span>
       <select [ngModel]="season()" (ngModelChange)="selectSeason($event)">
+        <option [ngValue]="'all-time'">All-time</option>
         @for (year of seasons; track year) {
           <option [ngValue]="year">{{ year }}</option>
         }
       </select>
     </label>
 
-    @if (viewMode() === 'races') {
+    @if (viewMode() === 'races' && season() !== 'all-time') {
       <button class="secondary-button" (click)="showStandings()">Classificações</button>
-    } @else {
+    } @else if (viewMode() === 'standings') {
       <button class="secondary-button" (click)="showRaces()">Corridas</button>
     }
     <span class="stat-pill">
@@ -73,7 +74,7 @@
 } @else if (isLoading()) {
   <section class="empty-state compact-empty">
     <h2>A carregar dados...</h2>
-    <p>Aguarde enquanto buscamos a temporada {{ season() }}.</p>
+    <p>Aguarde enquanto buscamos {{ season() === 'all-time' ? 'todas as temporadas' : 'a temporada ' + season() }}.</p>
   </section>
 } @else if (viewMode() === 'standings') {
   @if (standings(); as standings) {
@@ -199,7 +200,7 @@
   }
 } @else if (races().length === 0) {
   <section class="empty-state compact-empty">
-    <h2>Nenhuma corrida encontrada para {{ season() }}</h2>
+    <h2>Nenhuma corrida encontrada para {{ seasonLabel() }}</h2>
     <p>Tente outra temporada anterior ou avise se os dados não estiverem disponíveis.</p>
   </section>
 } @else if (filteredRaces().length === 0) {
@@ -240,7 +241,7 @@
 
         <a
           class="primary-button compact"
-          [routerLink]="['/races', season(), race.round]"
+          [routerLink]="['/races', race.season, race.round]"
           [queryParams]="{ returnSeason: season(), returnView: viewMode() }"
         >
           Ver detalhes

@@ -1,73 +1,103 @@
+import { AsyncPipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, effect, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Observable, of } from 'rxjs';
+import { catchError, map, shareReplay } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
-import { JolpicaRaceSummary } from '../../core/models/f1.models';
+import { JolpicaRaceSummary, SeasonStandings } from '../../core/models/f1.models';
+
+interface WikipediaSummary {
+  thumbnail?: {
+    source?: string;
+  };
+  originalimage?: {
+    source?: string;
+  };
+}
 
 @Component({
   standalone: true,
   selector: 'app-dashboard',
-  imports: [RouterLink],
+  imports: [AsyncPipe, FormsModule, RouterLink],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
   private readonly f1Service = inject(F1Service);
+  private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly currentYear = new Date().getUTCFullYear();
+  private readonly imageCache = new Map<string, Observable<string | undefined>>();
 
-  protected readonly seasons = Array.from({ length: new Date().getUTCFullYear() - 1950 + 1 }, (_, i) => new Date().getUTCFullYear() - i).reverse().reverse();
-  protected readonly season = signal<number>(new Date().getUTCFullYear());
+  protected readonly seasons = Array.from({ length: this.currentYear - 1950 + 1 }, (_, i) => this.currentYear - i).reverse().reverse();
+  protected readonly season = signal<number>(this.getInitialSeason());
   protected readonly races = signal<JolpicaRaceSummary[]>([]);
+  protected readonly standings = signal<SeasonStandings | null>(null);
   protected readonly isLoading = signal<boolean>(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly historyMode = signal<boolean>(false);
+  protected readonly viewMode = signal<'races' | 'standings'>(this.getInitialViewMode());
 
   constructor() {
+    this.route.queryParamMap.subscribe((params) => {
+      const requestedSeason = Number(params.get('season'));
+      const requestedView = params.get('view') === 'standings' ? 'standings' : 'races';
+
+      if (Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear) {
+        this.season.set(requestedSeason);
+      }
+      this.viewMode.set(requestedView);
+    });
+
     effect((onCleanup) => {
       const seasonValue = this.season();
+      const mode = this.viewMode();
       this.isLoading.set(true);
       this.error.set(null);
 
-      const sub = this.f1Service.getSeasonRaces(seasonValue).subscribe({
-        next: (races) => {
-          this.races.set(races);
-          this.isLoading.set(false);
-        },
-        error: () => {
-          this.error.set('Não foi possível carregar as corridas desta temporada.');
-          this.races.set([]);
-          this.isLoading.set(false);
-        },
-      });
+      const sub =
+        mode === 'standings'
+          ? this.f1Service.getSeasonStandings(seasonValue).subscribe({
+              next: (standings) => {
+                this.standings.set(standings);
+                this.isLoading.set(false);
+              },
+              error: () => {
+                this.error.set('Não foi possível carregar as classificações desta temporada.');
+                this.standings.set(null);
+                this.isLoading.set(false);
+              },
+            })
+          : this.f1Service.getSeasonRaces(seasonValue).subscribe({
+              next: (races) => {
+                this.races.set(races);
+                this.isLoading.set(false);
+              },
+              error: () => {
+                this.error.set('Não foi possível carregar as corridas desta temporada.');
+                this.races.set([]);
+                this.isLoading.set(false);
+              },
+            });
 
       onCleanup(() => sub.unsubscribe());
     });
   }
 
-  protected showHistory(): void {
-    this.isLoading.set(true);
-    this.error.set(null);
-
-    this.f1Service.getAllRacesHistory().subscribe({
-      next: (races) => {
-        this.races.set(races);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.error.set('Não foi possível carregar o histórico de corridas.');
-        this.races.set([]);
-        this.isLoading.set(false);
-      },
-    });
+  protected showStandings(): void {
+    this.viewMode.set('standings');
+    this.updateDashboardUrl();
   }
 
-  protected selectSeason(event: Event): void {
-    // switching season exits history mode
-    this.historyMode.set(false);
-    const target = event.target as HTMLSelectElement;
-    this.season.set(Number(target.value));
+  protected selectSeason(season: number): void {
+    this.season.set(Number(season));
+    this.updateDashboardUrl();
   }
 
-  protected hideHistory(): void {
-    this.historyMode.set(false);
-    this.season.set(new Date().getUTCFullYear());
+  protected showRaces(): void {
+    this.viewMode.set('races');
+    this.updateDashboardUrl();
   }
 
   protected isRaceCompleted(race: JolpicaRaceSummary): boolean {
@@ -78,6 +108,73 @@ export class DashboardComponent {
       return dateTime.getTime() <= Date.now();
     } catch {
       return false;
+    }
+  }
+
+  protected wikipediaImageUrl(url: string | undefined): Observable<string | undefined> {
+    if (!url) {
+      return of(undefined);
+    }
+
+    const cached = this.imageCache.get(url);
+    if (cached) {
+      return cached;
+    }
+
+    const title = this.wikipediaTitleFromUrl(url);
+    if (!title) {
+      return of(undefined);
+    }
+
+    const imageUrl = this.http
+      .get<WikipediaSummary>(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`)
+      .pipe(
+        map((summary) => summary.thumbnail?.source ?? summary.originalimage?.source),
+        catchError(() => of(undefined)),
+        shareReplay({ bufferSize: 1, refCount: true }),
+      );
+
+    this.imageCache.set(url, imageUrl);
+    return imageUrl;
+  }
+
+  protected initials(...parts: string[]): string {
+    return parts
+      .filter(Boolean)
+      .map((part) => part.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  private getInitialSeason(): number {
+    const requestedSeason = Number(this.route.snapshot.queryParamMap.get('season'));
+    return Number.isInteger(requestedSeason) && requestedSeason >= 1950 && requestedSeason <= this.currentYear
+      ? requestedSeason
+      : this.currentYear;
+  }
+
+  private getInitialViewMode(): 'races' | 'standings' {
+    return this.route.snapshot.queryParamMap.get('view') === 'standings' ? 'standings' : 'races';
+  }
+
+  private updateDashboardUrl(): void {
+    void this.router.navigate(['/dashboard'], {
+      queryParams: {
+        season: this.season(),
+        view: this.viewMode(),
+      },
+      replaceUrl: true,
+    });
+  }
+
+  private wikipediaTitleFromUrl(url: string): string | undefined {
+    try {
+      const parsedUrl = new URL(url);
+      const title = parsedUrl.pathname.split('/wiki/')[1];
+      return title ? encodeURIComponent(decodeURIComponent(title)) : undefined;
+    } catch {
+      return undefined;
     }
   }
 }

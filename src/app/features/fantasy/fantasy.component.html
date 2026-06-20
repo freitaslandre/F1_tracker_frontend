@@ -1,196 +1,325 @@
-<div class="header">
+<section class="fantasy-hero">
   <div>
     <p class="eyebrow">F1 Fantasy</p>
-    <h1>Monte a sua equipa</h1>
+    <h1>Constrói a tua equipa de corrida</h1>
+    <p>Escolhe 5 pilotos e 2 construtores, mantém o orçamento nos 100M e guarda a equipa para entrar no leaderboard.</p>
   </div>
 
-  <div class="status-pill">{{ selectedDriverCount() }}/5 Drivers • {{ selectedConstructorCount() }}/2 Construtores</div>
-</div>
+  <div class="fantasy-status">
+    <span>{{ selectedDriverCount() }}/5 pilotos</span>
+    <span>{{ selectedConstructorCount() }}/2 construtores</span>
+  </div>
+</section>
 
-<div class="layout">
-  <section class="panel">
-    <div class="budget-overview">
-      <div class="budget-card">
-        <strong>Orçamento total</strong>
-        <span>$100.0M</span>
-      </div>
-      <div class="budget-card">
-        <strong>Orçamento usado</strong>
-        <span>{{ usedBudget().toFixed(1) }}M</span>
-      </div>
-      <div class="budget-card">
-        <strong>Orçamento restante</strong>
-        <span>{{ remainingBudget().toFixed(1) }}M</span>
-      </div>
+<section class="fantasy-summary">
+  <article>
+    <span>Orçamento usado</span>
+    <strong>{{ usedBudget().toFixed(1) }}M</strong>
+    <div class="budget-track" aria-hidden="true">
+      <span [style.width.%]="budgetUsagePercent()"></span>
     </div>
+  </article>
+  <article>
+    <span>Disponível</span>
+    <strong>{{ remainingBudget().toFixed(1) }}M</strong>
+  </article>
+  <article>
+    <span>Projeção</span>
+    <strong>{{ projectedPoints() }} pts</strong>
+  </article>
+  <article>
+    <span>DRS capitão</span>
+    <strong>{{ captain()?.initials ?? '—' }}</strong>
+  </article>
+</section>
 
-    <div class="team-heading">
+<div class="fantasy-layout">
+  <section class="fantasy-panel lineup-panel">
+    <div class="panel-heading">
       <div>
+        <p class="eyebrow">Line-up</p>
         <h2>A Minha Equipa</h2>
-        <p>{{ selectedDriverCount() }} pilotos e {{ selectedConstructorCount() }} construtores escolhidos</p>
       </div>
-      <span>{{ remainingBudget().toFixed(1) }}M livres</span>
+      <button class="secondary-button compact" type="button" (click)="resetTeam()">Limpar</button>
     </div>
 
-    <div class="slots">
-      <div class="slot-group">
-        <p class="slot-label">Pilotos</p>
-        @for (driver of selectedDrivers(); track $index; let idx = $index) {
-          <div class="slot" [class.occupied]="driver !== null">
-            <span class="slot-number">{{ idx + 1 }}</span>
-
-            @if (driver) {
-              @if (driverPhotoUrl(driver) | async; as photoUrl) {
-                <img class="slot-icon driver-image" [src]="photoUrl" [alt]="driver.name" />
-              } @else {
-                <div class="slot-icon">{{ driver.initials }}</div>
-              }
-            } @else {
-              <div class="slot-icon empty">DR</div>
-            }
-
-            <div class="slot-body">
-              <h3>{{ driver?.name ?? 'Piloto vazio' }}</h3>
-              <p>{{ driver ? driver.team : 'Escolha um piloto para este slot' }}</p>
-            </div>
-
-            <div class="slot-meta">
-              <span>{{ driver ? formatPrice(driver.price) : 'Livre' }}</span>
-              <small>{{ driver ? driver.points + ' pts' : 'Obrigatório' }}</small>
-            </div>
-
-            @if (driver) {
-              <button class="remove-slot" type="button" (click)="removeDriver(idx)" aria-label="Remover piloto">✕</button>
-            }
-          </div>
-        }
-      </div>
-
-      <div class="slot-group">
-        <p class="slot-label">Construtores</p>
-        @for (item of selectedConstructors(); track $index; let idx = $index) {
-          <div class="slot constructor-slot" [class.occupied]="item !== null">
-            <span class="slot-number">{{ idx + 1 }}</span>
-
-            @if (item) {
-              @if (constructorLogoUrl(item) | async; as logoUrl) {
-                <img
-                  class="slot-icon constructor-logo"
-                  [src]="logoUrl"
-                  [alt]="item.name + ' logo'"
-                  (error)="markConstructorLogoBroken(item.id)"
-                />
-              } @else {
-                <div class="slot-icon">{{ item.initials }}</div>
-              }
-            } @else {
-              <div class="slot-icon empty">C</div>
-            }
-
-            <div class="slot-body">
-              <h3>{{ item?.name ?? 'Construtor vazio' }}</h3>
-              <p>{{ item ? item.nationality : 'Escolha uma equipa para este slot' }}</p>
-            </div>
-
-            <div class="slot-meta">
-              <span>{{ item ? formatPrice(item.price) : 'Livre' }}</span>
-              <small>{{ item ? item.points + ' pts' : 'Obrigatório' }}</small>
-            </div>
-
-            @if (item) {
-              <button class="remove-slot" type="button" (click)="removeConstructor(idx)" aria-label="Remover construtor">✕</button>
-            }
-          </div>
-        }
-      </div>
+    <div class="feedback-box" [class.ready]="isTeamValid()">
+      {{ feedbackMessage() }}
     </div>
 
-    <div class="footer">
+    <div class="slot-group">
+      <div class="slot-label">
+        <strong>Pilotos</strong>
+        <span>{{ selectedDriverCount() }}/5</span>
+      </div>
+
+      @for (driver of selectedDrivers(); track $index; let idx = $index) {
+        <article class="team-slot" [class.empty]="!driver" [class.captain]="driver?.id === captainId()">
+          <span class="slot-number">{{ idx + 1 }}</span>
+
+          @if (driver) {
+            @if (driverPhotoUrl(driver) | async; as photoUrl) {
+              <img class="slot-avatar driver-image" [src]="photoUrl" [alt]="driver.name" />
+            } @else {
+              <span class="slot-avatar">{{ driver.initials }}</span>
+            }
+          } @else {
+            <span class="slot-avatar empty-avatar">DR</span>
+          }
+
+          <div class="slot-copy">
+            <h3>{{ driver?.name ?? 'Piloto vazio' }}</h3>
+            <p>{{ driver ? driver.team : 'Seleciona um piloto no mercado' }}</p>
+          </div>
+
+          <div class="slot-stats">
+            <strong>{{ driver ? formatPrice(driver.price) : 'Livre' }}</strong>
+            <span>{{ driver ? driver.points + ' pts' : 'Obrigatório' }}</span>
+          </div>
+
+          @if (driver) {
+            <button
+              class="captain-button"
+              [class.active]="captainId() === driver.id"
+              type="button"
+              (click)="setCaptain(driver)"
+              title="Definir capitão DRS"
+            >
+              C
+            </button>
+            <button class="remove-slot" type="button" (click)="removeDriver(idx)" title="Remover piloto">×</button>
+          }
+        </article>
+      }
+    </div>
+
+    <div class="slot-group">
+      <div class="slot-label">
+        <strong>Construtores</strong>
+        <span>{{ selectedConstructorCount() }}/2</span>
+      </div>
+
+      @for (item of selectedConstructors(); track $index; let idx = $index) {
+        <article class="team-slot constructor-slot" [class.empty]="!item">
+          <span class="slot-number">{{ idx + 1 }}</span>
+
+          @if (item) {
+            @if (constructorLogoUrl(item) | async; as logoUrl) {
+              <img
+                class="slot-avatar constructor-logo"
+                [src]="logoUrl"
+                [alt]="item.name + ' logo'"
+                (error)="markConstructorLogoBroken(item.id)"
+              />
+            } @else {
+              <span class="slot-avatar">{{ item.initials }}</span>
+            }
+          } @else {
+            <span class="slot-avatar empty-avatar">C</span>
+          }
+
+          <div class="slot-copy">
+            <h3>{{ item?.name ?? 'Construtor vazio' }}</h3>
+            <p>{{ item ? item.nationality : 'Seleciona uma equipa no mercado' }}</p>
+          </div>
+
+          <div class="slot-stats">
+            <strong>{{ item ? formatPrice(item.price) : 'Livre' }}</strong>
+            <span>{{ item ? item.points + ' pts' : 'Obrigatório' }}</span>
+          </div>
+
+          @if (item) {
+            <button class="remove-slot" type="button" (click)="removeConstructor(idx)" title="Remover construtor">×</button>
+          }
+        </article>
+      }
+    </div>
+
+    <footer class="fantasy-actions">
       <div>
-        <p style="margin:0; color:#94a3b8">Estado da equipa</p>
-        <strong>{{ isTeamValid() ? 'Equipa pronta para continuar' : 'Complete a equipa dentro do orçamento' }}</strong>
-        @if (saveMessage()) {
-          <p style="margin:8px 0 0; color:#86efac; font-weight:700">{{ saveMessage() }}</p>
+        <span>Base {{ basePoints() }} pts</span>
+        @if (captain()) {
+          <strong>DRS +{{ captain()?.points }} pts</strong>
+        } @else {
+          <strong>Escolhe capitão</strong>
         }
       </div>
-      <button class="continue-button" [disabled]="!isTeamValid()" type="button" (click)="continue()">Continue</button>
-    </div>
+      <button class="primary-button" [disabled]="!isTeamValid()" type="button" (click)="continue()">Guardar equipa</button>
+    </footer>
+
+    @if (saveMessage()) {
+      <p class="save-message">{{ saveMessage() }}</p>
+    }
   </section>
 
-  <section class="panel">
-    <div class="tab-list">
-      <button type="button" class="tab" [class.active]="activeTab() === 'drivers'" (click)="selectTab('drivers')">Drivers</button>
-      <button type="button" class="tab" [class.active]="activeTab() === 'constructors'" (click)="selectTab('constructors')">Construtores</button>
+  <section class="fantasy-panel market-panel">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Mercado</p>
+        <h2>Escolhas disponíveis</h2>
+      </div>
+      <div class="fantasy-tabs" aria-label="Tipo de mercado">
+        <button type="button" [class.active]="activeTab() === 'drivers'" (click)="selectTab('drivers')">Pilotos</button>
+        <button type="button" [class.active]="activeTab() === 'constructors'" (click)="selectTab('constructors')">Construtores</button>
+      </div>
     </div>
 
-    <div class="search-bar">
+    <label class="market-search">
+      <span>Pesquisar</span>
       <input
         type="search"
-        placeholder="Procurar por nome ou equipa"
+        placeholder="Nome, equipa ou iniciais"
         [value]="searchTerm()"
         (input)="searchTerm.set($any($event.target).value)"
         [disabled]="isLoading()"
       />
-    </div>
+    </label>
 
     @if (isLoading()) {
-      <div style="color:#cbd5e1; margin-bottom:18px;">A carregar pilotos e equipas de 2026...</div>
+      <div class="market-state">A carregar pilotos e equipas...</div>
     }
     @if (error()) {
-      <div style="color:#fca5a5; margin-bottom:18px;">{{ error() }}</div>
+      <div class="market-state error">{{ error() }}</div>
     }
 
-    <div class="selection-list">
+    <div class="market-list">
       @if (activeTab() === 'drivers') {
         @for (driver of filteredDrivers(); track driver.id) {
-        <article class="item-linha">
-          <div class="avatar-container">
-            @if (driverPhotoUrl(driver) | async; as photoUrl) {
-              <img class="avatar-circle driver-image" [src]="photoUrl" [alt]="driver.name" />
-            } @else {
-              <div class="avatar-circle">{{ driver.initials }}</div>
-            }
-          </div>
+          <article class="market-row" [class.selected]="isDriverSelected(driver)">
+            <div class="avatar-container">
+              @if (driverPhotoUrl(driver) | async; as photoUrl) {
+                <img class="market-avatar driver-image" [src]="photoUrl" [alt]="driver.name" />
+              } @else {
+                <span class="market-avatar">{{ driver.initials }}</span>
+              }
+            </div>
 
-          <div class="driver-info">
-            <h3>{{ driver.name }}</h3>
-            <p>{{ driver.team }} • {{ driver.points }} pts</p>
-          </div>
+            <div class="market-main">
+              <h3>{{ driver.name }}</h3>
+              <p>{{ driver.team }}</p>
+              @if (driverDisabledReason(driver); as reason) {
+                <small>{{ reason }}</small>
+              }
+            </div>
 
-          <div class="driver-price">
-            <span>{{ formatPrice(driver.price) }}</span>
-            <button type="button" [disabled]="!canAddDriver(driver)" (click)="addDriver(driver)">+</button>
-          </div>
-        </article>
+            <div class="market-metrics">
+              <span>{{ formatPrice(driver.price) }}</span>
+              <strong>{{ driver.points }} pts</strong>
+            </div>
+
+            <button
+              type="button"
+              class="market-action"
+              [class.remove]="isDriverSelected(driver)"
+              [disabled]="!isDriverSelected(driver) && !canAddDriver(driver)"
+              (click)="toggleDriver(driver)"
+            >
+              {{ isDriverSelected(driver) ? 'Remover' : 'Adicionar' }}
+            </button>
+          </article>
         }
       } @else {
         @for (constructor of filteredConstructors(); track constructor.id) {
-        <article class="item-linha">
-          <div class="avatar-container">
-            @if (constructorLogoUrl(constructor) | async; as logoUrl) {
-              <img
-                [src]="logoUrl"
-                class="team-logo"
-                [alt]="constructor.name + ' logo'"
-                (error)="markConstructorLogoBroken(constructor.id)"
-              />
-            } @else {
-              <div class="avatar-circle constructor-fallback">{{ constructor.initials }}</div>
-            }
-          </div>
+          <article class="market-row" [class.selected]="isConstructorSelected(constructor)">
+            <div class="avatar-container">
+              @if (constructorLogoUrl(constructor) | async; as logoUrl) {
+                <img
+                  [src]="logoUrl"
+                  class="market-avatar team-logo"
+                  [alt]="constructor.name + ' logo'"
+                  (error)="markConstructorLogoBroken(constructor.id)"
+                />
+              } @else {
+                <span class="market-avatar">{{ constructor.initials }}</span>
+              }
+            </div>
 
-          <div class="driver-info">
-            <h3>{{ constructor.name }}</h3>
-            <p>{{ constructor.nationality }} • {{ constructor.points }} pts</p>
-          </div>
+            <div class="market-main">
+              <h3>{{ constructor.name }}</h3>
+              <p>{{ constructor.nationality }}</p>
+              @if (constructorDisabledReason(constructor); as reason) {
+                <small>{{ reason }}</small>
+              }
+            </div>
 
-          <div class="driver-price">
-            <span>{{ formatPrice(constructor.price) }}</span>
-            <button type="button" [disabled]="!canAddConstructor(constructor)" (click)="addConstructor(constructor)">+</button>
-          </div>
-        </article>
+            <div class="market-metrics">
+              <span>{{ formatPrice(constructor.price) }}</span>
+              <strong>{{ constructor.points }} pts</strong>
+            </div>
+
+            <button
+              type="button"
+              class="market-action"
+              [class.remove]="isConstructorSelected(constructor)"
+              [disabled]="!isConstructorSelected(constructor) && !canAddConstructor(constructor)"
+              (click)="toggleConstructor(constructor)"
+            >
+              {{ isConstructorSelected(constructor) ? 'Remover' : 'Adicionar' }}
+            </button>
+          </article>
         }
       }
     </div>
   </section>
 </div>
+
+<section class="fantasy-insights">
+  <article class="insight-card">
+    <h2>Resumo de pontuação</h2>
+    <ul class="insight-list">
+      <li>
+        <span>Pilotos</span>
+        <strong>{{ selectedDriverItems().length }}/5</strong>
+      </li>
+      <li>
+        <span>Construtores</span>
+        <strong>{{ selectedConstructorItems().length }}/2</strong>
+      </li>
+      <li>
+        <span>Total base</span>
+        <strong>{{ basePoints() }} pts</strong>
+      </li>
+      <li>
+        <span>Valor</span>
+        <strong>{{ valueRating().toFixed(1) }} pts/M</strong>
+      </li>
+    </ul>
+  </article>
+
+  <article class="insight-card">
+    <h2>Melhor valor disponível</h2>
+    <ul class="insight-list">
+      @for (item of recommendations(); track item.id) {
+        <li>
+          <span>{{ item.name }}</span>
+          <strong>{{ (item.points / item.price).toFixed(1) }} pts/M</strong>
+        </li>
+      }
+      @if (recommendations().length === 0) {
+        <li>
+          <span>Sem sugestões no orçamento atual</span>
+          <strong>—</strong>
+        </li>
+      }
+    </ul>
+  </article>
+
+  <article class="insight-card">
+    <h2>Leaderboard</h2>
+    <ul class="insight-list leaderboard-list">
+      @for (entry of leaderboard(); track entry.userId; let idx = $index) {
+        <li>
+          <span class="rank-badge">{{ idx + 1 }}</span>
+          <span>{{ entry.userName }} · {{ entry.driverCount }}/5 pilotos</span>
+          <strong>{{ entry.projectedPoints }} pts</strong>
+        </li>
+      }
+      @if (leaderboard().length === 0) {
+        <li>
+          <span>Ainda não há equipas guardadas</span>
+          <strong>—</strong>
+        </li>
+      }
+    </ul>
+  </article>
+</section>

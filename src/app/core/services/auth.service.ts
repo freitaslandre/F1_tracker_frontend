@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, of, tap, throwError } from 'rxjs';
 
 export interface AuthUser {
   id: number;
@@ -11,11 +11,16 @@ export interface AuthUser {
 
 const TOKEN_KEY = 'f1rm_token';
 const USER_KEY = 'f1rm_user';
+const LOCAL_USERS_KEY = 'f1rm_local_users';
 const BACKEND_URL = 'http://localhost:3000/api';
 
 interface AuthResponse {
   user: AuthUser;
   token: string;
+}
+
+interface LocalUser extends AuthUser {
+  password: string;
 }
 
 @Injectable({
@@ -32,13 +37,19 @@ export class AuthService {
   login(email: string, password: string): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${BACKEND_URL}/auth/login`, { email, password })
-      .pipe(tap((session) => this.setSession(session)));
+      .pipe(
+        catchError(() => this.localLogin(email, password)),
+        tap((session) => this.setSession(session)),
+      );
   }
 
   register(name: string, email: string, password: string): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${BACKEND_URL}/auth/register`, { name, email, password })
-      .pipe(tap((session) => this.setSession(session)));
+      .pipe(
+        catchError(() => this.localRegister(name, email, password)),
+        tap((session) => this.setSession(session)),
+      );
   }
 
   getToken(): string | null {
@@ -71,5 +82,65 @@ export class AuthService {
       localStorage.removeItem(USER_KEY);
       return null;
     }
+  }
+
+  private localLogin(email: string, password: string): Observable<AuthResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const users = this.readLocalUsers();
+    const demoUser = {
+      id: 1,
+      name: 'Demo Manager',
+      email: 'demo@f1manager.test',
+      password: 'password',
+    };
+    const user = [...users, demoUser].find((item) => item.email === normalizedEmail);
+
+    if (!user || user.password !== password) {
+      return throwError(() => new Error('Credenciais inválidas.'));
+    }
+
+    return of(this.createLocalSession(user));
+  }
+
+  private localRegister(name: string, email: string, password: string): Observable<AuthResponse> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const users = this.readLocalUsers();
+
+    if (users.some((user) => user.email === normalizedEmail)) {
+      return throwError(() => new Error('Este email já existe no modo local.'));
+    }
+
+    const user: LocalUser = {
+      id: Date.now(),
+      name: name.trim() || 'F1 Fan',
+      email: normalizedEmail,
+      password,
+      createdAt: new Date().toISOString(),
+    };
+    localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify([...users, user]));
+
+    return of(this.createLocalSession(user));
+  }
+
+  private readLocalUsers(): LocalUser[] {
+    try {
+      const raw = localStorage.getItem(LOCAL_USERS_KEY);
+      return raw ? JSON.parse(raw) as LocalUser[] : [];
+    } catch {
+      localStorage.removeItem(LOCAL_USERS_KEY);
+      return [];
+    }
+  }
+
+  private createLocalSession(user: LocalUser): AuthResponse {
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt,
+      },
+      token: `local-${user.id}-${Date.now()}`,
+    };
   }
 }

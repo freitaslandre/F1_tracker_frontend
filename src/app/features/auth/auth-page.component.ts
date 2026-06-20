@@ -39,7 +39,7 @@ export class AuthPageComponent {
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        this.error.set(err?.error?.message ?? 'Não foi possível autenticar.');
+        this.error.set(err?.error?.message ?? err?.message ?? 'Não foi possível autenticar.');
       },
     });
   }

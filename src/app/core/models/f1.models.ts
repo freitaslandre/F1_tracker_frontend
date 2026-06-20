@@ -108,6 +108,19 @@ export interface SavedFantasyTeam {
   constructors: SavedFantasyItem[];
 }
 
+export interface FantasyLeaderboardEntry {
+  userId: number;
+  userName: string;
+  teamId: number;
+  budgetUsed: number;
+  updatedAt: string;
+  basePoints: number;
+  projectedPoints: number;
+  driverCount: number;
+  constructorCount: number;
+  isComplete: boolean;
+}
+
 export interface FavoriteCircuit {
   id?: number;
   circuitId: string;

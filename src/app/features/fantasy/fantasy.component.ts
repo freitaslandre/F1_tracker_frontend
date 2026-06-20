@@ -4,7 +4,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, switchMap, take } from 'rxjs/operators';
 import { F1Service } from '../../core/services/f1.service';
-import { FantasyConstructor, FantasyDriver, SavedFantasyTeam } from '../../core/models/f1.models';
+import {
+  FantasyConstructor,
+  FantasyDriver,
+  FantasyLeaderboardEntry,
+  SavedFantasyTeam,
+} from '../../core/models/f1.models';
 
 interface WikipediaSummary {
   thumbnail?: {
@@ -28,49 +33,13 @@ interface WikipediaSearchResponse {
   };
 }
 
+const CAPTAIN_KEY = 'f1rm_fantasy_captain';
+
 @Component({
   standalone: true,
   selector: 'app-fantasy',
   imports: [CommonModule],
   templateUrl: './fantasy.component.html',
-  styles: [
-    `
-      :host { display: block; padding: 24px; color: #f8fafc; font-family: Inter, system-ui, sans-serif; }
-      .header, .team-heading, .footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
-      .header h1, .panel h2, .slot-body h3, .driver-info h3 { margin: 0; }
-      .eyebrow, .team-heading p, .slot-body p, .driver-info p, .budget-card strong, .slot-meta small { color: #94a3b8; }
-      .status-pill, .tab.active { background: rgba(59, 130, 246, 0.18); color: #bfdbfe; }
-      .status-pill, .tab, .continue-button, .selection-actions button, .driver-price button { border-radius: 999px; padding: 10px 16px; font-weight: 700; }
-      .layout { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.4fr); gap: 24px; }
-      .panel { background: rgba(15, 23, 42, 0.92); border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 18px; padding: 22px; }
-      .budget-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-      .budget-card, .slot, .item-linha { background: #111827; border: 1px solid rgba(148, 163, 184, 0.14); border-radius: 14px; }
-      .budget-card { display: grid; gap: 6px; padding: 14px; }
-      .budget-card span { color: #fff; font-size: 1.1rem; font-weight: 900; }
-      .slots, .slot-group, .selection-list { display: grid; gap: 12px; }
-      .slot-label { margin: 0; color: #cbd5e1; font-size: .78rem; font-weight: 900; text-transform: uppercase; }
-      .slot { display: grid; grid-template-columns: 24px 54px minmax(0, 1fr) auto 28px; gap: 12px; align-items: center; min-height: 76px; padding: 12px; }
-      .slot-icon, .avatar-circle { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: #1f2937; color: #fff; font-weight: 900; }
-      .slot-icon.empty { color: #64748b; border: 1px dashed rgba(148, 163, 184, .32); background: transparent; }
-      .slot-body, .driver-info { min-width: 0; }
-      .slot-body h3, .slot-body p, .driver-info h3, .driver-info p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .slot-meta span, .driver-price { color: #e2e8f0; font-weight: 700; }
-      .remove-slot, .slot button { border: 0; background: transparent; color: #fef2f2; cursor: pointer; }
-      .tab-list { display: flex; gap: 12px; margin-bottom: 18px; }
-      .tab { border: 1px solid transparent; color: #cbd5e1; cursor: pointer; background: transparent; }
-      .search-bar input { width: 100%; box-sizing: border-box; margin-bottom: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(148, 163, 184, .16); background: #0f172a; color: #fff; }
-      .item-linha { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; }
-      .avatar-container { width: 45px; height: 45px; min-width: 45px; margin-right: 16px; display: flex; align-items: center; justify-content: center; }
-      .team-logo, .constructor-logo { object-fit: contain; background: #fff; border-radius: 8px; padding: 6px; box-sizing: border-box; }
-      .team-logo { width: 42px; height: 42px; }
-      .driver-image { object-fit: cover; border-radius: 50%; padding: 0; background: #3a3a3a; }
-      .driver-info { flex: 1; }
-      .driver-price { display: flex; align-items: center; gap: 12px; color: #00e5ff; white-space: nowrap; }
-      .continue-button, .selection-actions button, .driver-price button { border: 0; background: #2563eb; color: #fff; cursor: pointer; }
-      button:disabled { background: rgba(148, 163, 184, .24); cursor: not-allowed; }
-      @media (max-width: 760px) { :host { padding: 16px; } .header, .team-heading, .footer { align-items: stretch; flex-direction: column; } .layout, .budget-overview { grid-template-columns: 1fr; } }
-    `,
-  ],
 })
 export class FantasyComponent {
   private readonly service = inject(F1Service);
@@ -116,21 +85,44 @@ export class FantasyComponent {
   readonly selectedDrivers = signal<(FantasyDriver | null)[]>(Array.from({ length: 5 }, () => null));
   readonly selectedConstructors = signal<(FantasyConstructor | null)[]>(Array.from({ length: 2 }, () => null));
   readonly brokenConstructorLogos = signal<Record<string, boolean>>({});
+  readonly captainId = signal<string | null>(localStorage.getItem(CAPTAIN_KEY));
+  readonly leaderboard = signal<FantasyLeaderboardEntry[]>([]);
+  readonly feedbackMessage = signal('Escolhe 5 pilotos e 2 construtores dentro do orçamento de 100M.');
 
   readonly selectedDriverCount = computed(() => this.selectedDrivers().filter(Boolean).length);
   readonly selectedConstructorCount = computed(() => this.selectedConstructors().filter(Boolean).length);
+  readonly selectedDriverItems = computed(() =>
+    this.selectedDrivers().filter((item): item is FantasyDriver => item !== null),
+  );
+  readonly selectedConstructorItems = computed(() =>
+    this.selectedConstructors().filter((item): item is FantasyConstructor => item !== null),
+  );
   readonly usedBudget = computed(() => {
-    const driverTotal = this.selectedDrivers()
-      .filter((item): item is FantasyDriver => item !== null)
+    const driverTotal = this.selectedDriverItems()
       .reduce((sum, item) => sum + item.price, 0);
 
-    const constructorTotal = this.selectedConstructors()
-      .filter((item): item is FantasyConstructor => item !== null)
+    const constructorTotal = this.selectedConstructorItems()
       .reduce((sum, item) => sum + item.price, 0);
 
     return Number((driverTotal + constructorTotal).toFixed(1));
   });
   readonly remainingBudget = computed(() => Math.max(0, 100 - this.usedBudget()));
+  readonly budgetUsagePercent = computed(() => Math.min(100, Math.round(this.usedBudget())));
+  readonly basePoints = computed(() => {
+    const driverPoints = this.selectedDriverItems().reduce((sum, item) => sum + item.points, 0);
+    const constructorPoints = this.selectedConstructorItems().reduce((sum, item) => sum + item.points, 0);
+    return driverPoints + constructorPoints;
+  });
+  readonly captain = computed(() =>
+    this.selectedDriverItems().find((driver) => driver.id === this.captainId()) ?? null,
+  );
+  readonly projectedPoints = computed(() => this.basePoints() + (this.captain()?.points ?? 0));
+  readonly valueRating = computed(() => {
+    if (this.usedBudget() === 0) {
+      return 0;
+    }
+    return Number((this.projectedPoints() / this.usedBudget()).toFixed(1));
+  });
   readonly isTeamValid = computed(
     () => this.selectedDriverCount() === 5 && this.selectedConstructorCount() === 2 && this.usedBudget() <= 100,
   );
@@ -156,7 +148,17 @@ export class FantasyComponent {
   });
 
   readonly saveMessage = signal<string | null>(null);
-
+  readonly recommendations = computed(() => {
+    const selectedIds = new Set([
+      ...this.selectedDriverItems().map((driver) => driver.id),
+      ...this.selectedConstructorItems().map((constructor) => constructor.id),
+    ]);
+    const remaining = this.remainingBudget();
+    return [...this.drivers(), ...this.constructors()]
+      .filter((item) => !selectedIds.has(item.id) && item.price <= remaining)
+      .sort((a, b) => (b.points / b.price) - (a.points / a.price))
+      .slice(0, 4);
+  });
   constructor() {
     this.loadFantasyData();
   }
@@ -166,8 +168,29 @@ export class FantasyComponent {
     this.searchTerm.set('');
   }
 
+  toggleDriver(driver: FantasyDriver): void {
+    const selectedIndex = this.selectedDrivers().findIndex((item) => item?.id === driver.id);
+    if (selectedIndex !== -1) {
+      this.removeDriver(selectedIndex);
+      return;
+    }
+
+    this.addDriver(driver);
+  }
+
+  toggleConstructor(constructor: FantasyConstructor): void {
+    const selectedIndex = this.selectedConstructors().findIndex((item) => item?.id === constructor.id);
+    if (selectedIndex !== -1) {
+      this.removeConstructor(selectedIndex);
+      return;
+    }
+
+    this.addConstructor(constructor);
+  }
+
   addDriver(driver: FantasyDriver): void {
     if (!this.canAddDriver(driver)) {
+      this.feedbackMessage.set(this.driverDisabledReason(driver) || 'Não foi possível adicionar este piloto.');
       return;
     }
 
@@ -181,18 +204,35 @@ export class FantasyComponent {
       next[firstEmpty] = driver;
       return next;
     });
+
+    if (!this.captainId()) {
+      this.setCaptain(driver);
+    }
+
+    this.saveMessage.set(null);
+    this.feedbackMessage.set(`${driver.name} adicionado à equipa.`);
   }
 
   removeDriver(index: number): void {
+    const removedDriver = this.selectedDrivers()[index];
     this.selectedDrivers.update((current) => {
       const next = [...current];
       next[index] = null;
       return next;
     });
+
+    if (removedDriver?.id === this.captainId()) {
+      const nextCaptain = this.selectedDrivers().find((driver) => driver !== null) ?? null;
+      this.setCaptain(nextCaptain);
+    }
+
+    this.saveMessage.set(null);
+    this.feedbackMessage.set(removedDriver ? `${removedDriver.name} removido da equipa.` : 'Slot de piloto limpo.');
   }
 
   addConstructor(constructor: FantasyConstructor): void {
     if (!this.canAddConstructor(constructor)) {
+      this.feedbackMessage.set(this.constructorDisabledReason(constructor) || 'Não foi possível adicionar este construtor.');
       return;
     }
 
@@ -206,14 +246,21 @@ export class FantasyComponent {
       next[firstEmpty] = constructor;
       return next;
     });
+
+    this.saveMessage.set(null);
+    this.feedbackMessage.set(`${constructor.name} adicionado aos construtores.`);
   }
 
   removeConstructor(index: number): void {
+    const removedConstructor = this.selectedConstructors()[index];
     this.selectedConstructors.update((current) => {
       const next = [...current];
       next[index] = null;
       return next;
     });
+
+    this.saveMessage.set(null);
+    this.feedbackMessage.set(removedConstructor ? `${removedConstructor.name} removido da equipa.` : 'Slot de construtor limpo.');
   }
 
   canAddDriver(driver: FantasyDriver): boolean {
@@ -230,6 +277,61 @@ export class FantasyComponent {
       !this.selectedConstructors().some((item) => item?.id === constructor.id) &&
       this.usedBudget() + constructor.price <= 100
     );
+  }
+
+  isDriverSelected(driver: FantasyDriver): boolean {
+    return this.selectedDrivers().some((item) => item?.id === driver.id);
+  }
+
+  isConstructorSelected(constructor: FantasyConstructor): boolean {
+    return this.selectedConstructors().some((item) => item?.id === constructor.id);
+  }
+
+  driverDisabledReason(driver: FantasyDriver): string | null {
+    if (this.isDriverSelected(driver)) {
+      return null;
+    }
+    if (this.selectedDriverCount() >= 5) {
+      return 'Remove um piloto para abrir espaço.';
+    }
+    if (this.usedBudget() + driver.price > 100) {
+      return `Faltam ${(this.usedBudget() + driver.price - 100).toFixed(1)}M de orçamento.`;
+    }
+    return null;
+  }
+
+  constructorDisabledReason(constructor: FantasyConstructor): string | null {
+    if (this.isConstructorSelected(constructor)) {
+      return null;
+    }
+    if (this.selectedConstructorCount() >= 2) {
+      return 'Remove um construtor para abrir espaço.';
+    }
+    if (this.usedBudget() + constructor.price > 100) {
+      return `Faltam ${(this.usedBudget() + constructor.price - 100).toFixed(1)}M de orçamento.`;
+    }
+    return null;
+  }
+
+  resetTeam(): void {
+    this.selectedDrivers.set(Array.from({ length: 5 }, () => null));
+    this.selectedConstructors.set(Array.from({ length: 2 }, () => null));
+    this.setCaptain(null);
+    this.saveMessage.set(null);
+    this.feedbackMessage.set('Equipa limpa. Podes começar uma nova estratégia.');
+    this.service.deleteFantasyTeam().pipe(take(1)).subscribe({
+      next: () => this.loadLeaderboard(),
+      error: () => this.loadLeaderboard(),
+    });
+  }
+
+  setCaptain(driver: FantasyDriver | null): void {
+    this.captainId.set(driver?.id ?? null);
+    if (driver) {
+      localStorage.setItem(CAPTAIN_KEY, driver.id);
+      return;
+    }
+    localStorage.removeItem(CAPTAIN_KEY);
   }
 
   constructorLogoUrl(constructor: FantasyConstructor | null): Observable<string | undefined> {
@@ -269,6 +371,7 @@ export class FantasyComponent {
 
   continue(): void {
     if (!this.isTeamValid()) {
+      this.feedbackMessage.set('Completa 5 pilotos e 2 construtores dentro dos 100M antes de guardar.');
       return;
     }
 
@@ -277,7 +380,9 @@ export class FantasyComponent {
 
     this.service.saveFantasyTeam(drivers, constructors, this.usedBudget()).subscribe({
       next: () => {
-        this.saveMessage.set('Equipa guardada com sucesso.');
+        this.saveMessage.set('Equipa guardada com sucesso. A projeção já inclui o capitão em DRS.');
+        this.feedbackMessage.set('Equipa guardada na base de dados e pronta para o leaderboard.');
+        this.loadLeaderboard();
       },
       error: () => {
         this.saveMessage.set(null);
@@ -333,12 +438,14 @@ export class FantasyComponent {
       drivers: this.service.getFantasyDriversData(),
       constructors: this.service.getFantasyConstructorsData(),
       savedTeam: this.service.loadFantasyTeam().pipe(catchError(() => of({ team: null }))),
+      leaderboard: this.service.getFantasyLeaderboard().pipe(catchError(() => of([]))),
     })
       .pipe(take(1))
       .subscribe({
-        next: ({ drivers, constructors, savedTeam }) => {
+        next: ({ drivers, constructors, savedTeam, leaderboard }) => {
           this.drivers.set(drivers);
           this.constructors.set(constructors);
+          this.leaderboard.set(leaderboard);
           this.restoreSavedTeam(drivers, constructors, savedTeam.team);
           this.isLoading.set(false);
         },
@@ -347,6 +454,13 @@ export class FantasyComponent {
           this.isLoading.set(false);
         },
       });
+  }
+
+  private loadLeaderboard(): void {
+    this.service.getFantasyLeaderboard().pipe(take(1)).subscribe({
+      next: (leaderboard) => this.leaderboard.set(leaderboard),
+      error: () => this.leaderboard.set([]),
+    });
   }
 
   private restoreSavedTeam(
@@ -377,5 +491,11 @@ export class FantasyComponent {
 
     this.selectedDrivers.set(resolvedDrivers);
     this.selectedConstructors.set(resolvedConstructors);
+
+    const savedCaptain = this.captainId();
+    const captainStillExists = resolvedDrivers.some((driver) => driver?.id === savedCaptain);
+    if (!captainStillExists) {
+      this.setCaptain(resolvedDrivers.find((driver) => driver !== null) ?? null);
+    }
   }
 }

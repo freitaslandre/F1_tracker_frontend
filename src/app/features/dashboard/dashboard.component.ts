@@ -1,6 +1,6 @@
 import { AsyncPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
@@ -38,6 +38,34 @@ export class DashboardComponent {
   protected readonly isLoading = signal<boolean>(false);
   protected readonly error = signal<string | null>(null);
   protected readonly viewMode = signal<'races' | 'standings'>(this.getInitialViewMode());
+  protected readonly searchTerm = signal('');
+  protected readonly raceStatusFilter = signal<'all' | 'completed' | 'upcoming'>('all');
+  protected readonly countryFilter = signal('all');
+  protected readonly availableCountries = computed(() =>
+    [...new Set(this.races().map((race) => race.Circuit.Location.country).filter(Boolean))].sort(),
+  );
+  protected readonly filteredRaces = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const status = this.raceStatusFilter();
+    const country = this.countryFilter();
+
+    return this.races().filter((race) => {
+      const matchesSearch =
+        !term ||
+        race.raceName.toLowerCase().includes(term) ||
+        race.Circuit.circuitName.toLowerCase().includes(term) ||
+        race.Circuit.Location.locality.toLowerCase().includes(term) ||
+        race.Circuit.Location.country.toLowerCase().includes(term);
+      const completed = this.isRaceCompleted(race);
+      const matchesStatus =
+        status === 'all' ||
+        (status === 'completed' && completed) ||
+        (status === 'upcoming' && !completed);
+      const matchesCountry = country === 'all' || race.Circuit.Location.country === country;
+
+      return matchesSearch && matchesStatus && matchesCountry;
+    });
+  });
 
   constructor() {
     this.route.queryParamMap.subscribe((params) => {
@@ -92,12 +120,19 @@ export class DashboardComponent {
 
   protected selectSeason(season: number): void {
     this.season.set(Number(season));
+    this.clearFilters();
     this.updateDashboardUrl();
   }
 
   protected showRaces(): void {
     this.viewMode.set('races');
     this.updateDashboardUrl();
+  }
+
+  protected clearFilters(): void {
+    this.searchTerm.set('');
+    this.raceStatusFilter.set('all');
+    this.countryFilter.set('all');
   }
 
   protected isRaceCompleted(race: JolpicaRaceSummary): boolean {

@@ -25,10 +25,45 @@
       <button class="secondary-button" (click)="showRaces()">Corridas</button>
     }
     <span class="stat-pill">
-      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : races().length + ' Grandes Prêmios' }}
+      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prêmios' }}
     </span>
   </div>
 </section>
+
+@if (viewMode() === 'races') {
+  <section class="panel dashboard-filters">
+    <label>
+      <span>Pesquisar</span>
+      <input
+        type="search"
+        placeholder="Grande Prêmio, circuito, cidade ou país"
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+    </label>
+
+    <label>
+      <span>Estado</span>
+      <select [ngModel]="raceStatusFilter()" (ngModelChange)="raceStatusFilter.set($event)">
+        <option value="all">Todas</option>
+        <option value="completed">Concluídas</option>
+        <option value="upcoming">Futuras</option>
+      </select>
+    </label>
+
+    <label>
+      <span>País</span>
+      <select [ngModel]="countryFilter()" (ngModelChange)="countryFilter.set($event)">
+        <option value="all">Todos</option>
+        @for (country of availableCountries(); track country) {
+          <option [value]="country">{{ country }}</option>
+        }
+      </select>
+    </label>
+
+    <button class="secondary-button compact" type="button" (click)="clearFilters()">Limpar</button>
+  </section>
+}
 
 @if (error()) {
   <section class="empty-state compact-empty">
@@ -167,9 +202,14 @@
     <h2>Nenhuma corrida encontrada para {{ season() }}</h2>
     <p>Tente outra temporada anterior ou avise se os dados não estiverem disponíveis.</p>
   </section>
+} @else if (filteredRaces().length === 0) {
+  <section class="empty-state compact-empty">
+    <h2>Nenhuma corrida corresponde aos filtros.</h2>
+    <p>Altere a pesquisa, o estado ou o país para ver mais resultados.</p>
+  </section>
 } @else {
   <section class="race-grid">
-    @for (race of races(); track race.season + '-' + race.round) {
+    @for (race of filteredRaces(); track race.season + '-' + race.round) {
       <article class="race-card">
         @if (isRaceCompleted(race)) {
           <span class="status-badge completed">Concluída</span>

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, map, of, tap } from 'rxjs';
+import { BACKEND_URL, HTTP_OPTIONS } from '../config/api.config';
 
 export interface AuthUser {
   id: number;
@@ -8,9 +9,6 @@ export interface AuthUser {
   email: string;
   createdAt?: string;
 }
-
-const BACKEND_URL = 'http://localhost:3000/api';
-const HTTP_OPTIONS = { withCredentials: true };
 
 interface AuthResponse {
   user: AuthUser;

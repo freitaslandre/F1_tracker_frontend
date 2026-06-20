@@ -28,6 +28,11 @@
         <button class="text-button" type="button" (click)="removeVote(race)">Apagar voto</button>
       }
     </div>
+    @if (selectedDriverId()) {
+      <button class="secondary-button compact" type="button" (click)="removeVote(race)">
+        Remover voto
+      </button>
+    }
   </section>
 
   <section class="panel">

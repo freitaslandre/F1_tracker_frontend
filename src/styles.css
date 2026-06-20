@@ -509,6 +509,35 @@ input {
   gap: 10px;
 }
 
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.profile-stats article {
+  display: grid;
+  gap: 8px;
+  min-height: 126px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(18, 23, 34, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.profile-stats span,
+.profile-stats small,
+.profile-vote-item span {
+  color: var(--muted);
+}
+
+.profile-stats strong {
+  overflow-wrap: anywhere;
+  font-size: 1.35rem;
+}
+
 .favorite-item {
   display: grid;
   gap: 4px;
@@ -516,6 +545,28 @@ input {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-vote-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.profile-team-list .favorite-item span {
+  line-height: 1.7;
+}
+
+.mini-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 209, 102, 0.2);
+  border-radius: 999px;
+  color: var(--gold) !important;
+  background: rgba(255, 209, 102, 0.08);
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .empty-state {
@@ -562,6 +613,14 @@ input {
   }
 
   .dashboard-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-vote-item {
     grid-template-columns: 1fr;
   }
 }
@@ -1070,5 +1129,9 @@ input {
 
   .market-action {
     grid-column: 1 / -1;
+  }
+
+  .profile-stats {
+    grid-template-columns: 1fr;
   }
 }

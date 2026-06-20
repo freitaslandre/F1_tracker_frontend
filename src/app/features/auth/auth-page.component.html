@@ -3,12 +3,12 @@
     <p class="eyebrow">F1 Race Manager</p>
     <h1>Gere a tua temporada de F1 como um Race Manager pessoal.</h1>
     <p>
-      Consulta resultados simulados no formato Jolpica, vota no Piloto do Dia e guarda os circuitos que queres seguir.
+      Consulta dados reais de Fórmula 1, vota no Piloto do Dia e guarda os circuitos que queres seguir.
     </p>
   </div>
 
   <form class="panel auth-panel" (ngSubmit)="submit()">
-    <div class="segmented-control" aria-label="Modo de autenticacao">
+    <div class="segmented-control" aria-label="Modo de autenticação">
       <button type="button" [class.active]="mode() === 'login'" (click)="switchMode('login')">Login</button>
       <button type="button" [class.active]="mode() === 'register'" (click)="switchMode('register')">Registo</button>
     </div>
@@ -27,7 +27,7 @@
 
     <label>
       Password
-      <input name="password" type="password" required minlength="4" [(ngModel)]="password" autocomplete="current-password" />
+      <input name="password" type="password" required minlength="8" [(ngModel)]="password" autocomplete="current-password" />
     </label>
 
     <button class="primary-button" type="submit">

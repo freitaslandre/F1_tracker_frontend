@@ -1,10 +1,33 @@
 <section class="page-heading">
   <div>
-    <p class="eyebrow">Area pessoal</p>
+    <p class="eyebrow">Área pessoal</p>
     <h1>{{ auth.currentUser()?.name ?? 'F1 Fan' }}</h1>
     <p>{{ auth.currentUser()?.email }}</p>
   </div>
   <span class="stat-pill">{{ f1Service.favoriteCount() }} favoritos</span>
+</section>
+
+<section class="profile-stats">
+  <article>
+    <span>Circuitos</span>
+    <strong>{{ f1Service.favoriteCount() }}</strong>
+    <small>{{ favoriteLocations() }}</small>
+  </article>
+  <article>
+    <span>Votos</span>
+    <strong>{{ f1Service.voteCount() }}</strong>
+    <small>Piloto do Dia</small>
+  </article>
+  <article>
+    <span>Fantasy</span>
+    <strong>{{ f1Service.fantasyTeam() ? 'Ativa' : 'Vazia' }}</strong>
+    <small>{{ fantasySummary() }}</small>
+  </article>
+  <article>
+    <span>Mais votado</span>
+    <strong>{{ mostVotedDriver() }}</strong>
+    <small>Com base nos teus votos</small>
+  </article>
 </section>
 
 <section class="panel">
@@ -18,14 +41,40 @@
       @for (favorite of f1Service.favorites(); track favorite.circuitId) {
         <article class="favorite-item">
           <strong>{{ favorite.circuitName }}</strong>
-          <span>{{ favorite.raceName }} · {{ favorite.country }}</span>
+          <span>{{ favorite.raceName || 'Corrida associada' }} · {{ favorite.locality }}, {{ favorite.country }}</span>
         </article>
       }
     </div>
   } @else {
     <div class="empty-state compact-empty">
-      <h2>Ainda nao guardaste circuitos.</h2>
+      <h2>Ainda não guardaste circuitos.</h2>
       <a class="primary-button compact" routerLink="/dashboard">Explorar corridas</a>
+    </div>
+  }
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Votos do Piloto do Dia</h2>
+    <span>{{ f1Service.voteCount() }} votos guardados</span>
+  </div>
+
+  @if (f1Service.voteList().length) {
+    <div class="favorite-list">
+      @for (vote of f1Service.voteList(); track vote.raceSeason + '-' + vote.raceRound) {
+        <article class="favorite-item profile-vote-item">
+          <div>
+            <strong>{{ vote.driverName }}</strong>
+            <span>{{ vote.raceName }}</span>
+          </div>
+          <span class="mini-pill">{{ vote.raceSeason }} · Round {{ vote.raceRound }}</span>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="empty-state compact-empty">
+      <h2>Ainda não votaste em pilotos.</h2>
+      <a class="primary-button compact" routerLink="/dashboard">Ver corridas</a>
     </div>
   }
 </section>
@@ -37,15 +86,31 @@
   </div>
 
   @if (f1Service.fantasyTeam(); as team) {
-    <div class="favorite-list">
+    <div class="favorite-list profile-team-list">
       <article class="favorite-item">
         <strong>{{ team.drivers.length }} pilotos · {{ team.constructors.length }} construtores</strong>
         <span>Orçamento usado: {{ team.budgetUsed }}M / {{ team.budgetLimit }}M</span>
       </article>
+      <article class="favorite-item">
+        <strong>Pilotos</strong>
+        <span>
+          @for (driver of team.drivers; track driver.externalId) {
+            {{ driver.name }}{{ $last ? '' : ' · ' }}
+          }
+        </span>
+      </article>
+      <article class="favorite-item">
+        <strong>Construtores</strong>
+        <span>
+          @for (constructor of team.constructors; track constructor.externalId) {
+            {{ constructor.name }}{{ $last ? '' : ' · ' }}
+          }
+        </span>
+      </article>
     </div>
   } @else {
     <div class="empty-state compact-empty">
-      <h2>Ainda nao guardaste uma equipa Fantasy.</h2>
+      <h2>Ainda não guardaste uma equipa Fantasy.</h2>
       <a class="primary-button compact" routerLink="/fantasy">Montar equipa</a>
     </div>
   }

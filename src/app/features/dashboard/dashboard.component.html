@@ -26,7 +26,7 @@
       <button class="secondary-button" (click)="showRaces()">Corridas</button>
     }
     <span class="stat-pill">
-      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prêmios' }}
+      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prémios' }}
     </span>
   </div>
 </section>
@@ -37,7 +37,7 @@
       <span>Pesquisar</span>
       <input
         type="search"
-        placeholder="Grande Prêmio, circuito, cidade ou país"
+        placeholder="Grande Prémio, circuito, cidade ou país"
         [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)"
       />
@@ -69,7 +69,7 @@
 @if (error()) {
   <section class="empty-state compact-empty">
     <h2>{{ error() }}</h2>
-    <p>Verifique se o servidor backend está rodando e se a temporada selecionada está disponível.</p>
+    <p>Verifica se o servidor backend está ativo e se a temporada selecionada está disponível.</p>
   </section>
 } @else if (isLoading()) {
   <section class="empty-state compact-empty">

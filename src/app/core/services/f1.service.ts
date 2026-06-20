@@ -12,6 +12,7 @@ import {
   JolpicaRaceResult,
   JolpicaRaceSummary,
   SavedFantasyTeam,
+  SeasonStandings,
 } from '../models/f1.models';
 
 const TOKEN_KEY = 'f1rm_token';
@@ -146,6 +147,10 @@ export class F1Service {
     return this.fetchRaces(season).pipe(
       map((races) => races.find((race) => race.round === round)),
     );
+  }
+
+  getSeasonStandings(season: number): Observable<SeasonStandings> {
+    return this.http.get<SeasonStandings>(`${BACKEND_URL}/f1/standings?season=${season}`);
   }
 
   /**

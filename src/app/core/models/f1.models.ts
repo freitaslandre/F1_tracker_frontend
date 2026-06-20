@@ -65,6 +65,29 @@ export interface JolpicaRaceDetail extends JolpicaRaceSummary {
   Results?: JolpicaRaceResult[];
 }
 
+export interface DriverStanding {
+  position: string;
+  points: string;
+  wins: string;
+  Driver: JolpicaDriver;
+  Constructors: JolpicaConstructor[];
+}
+
+export interface ConstructorStanding {
+  position: string;
+  points: string;
+  wins: string;
+  Constructor: JolpicaConstructor;
+}
+
+export interface SeasonStandings {
+  season: string;
+  driverChampion: DriverStanding | null;
+  constructorChampion: ConstructorStanding | null;
+  driverStandings: DriverStanding[];
+  constructorStandings: ConstructorStanding[];
+}
+
 export interface FantasyDriver {
   id: string;
   initials: string;

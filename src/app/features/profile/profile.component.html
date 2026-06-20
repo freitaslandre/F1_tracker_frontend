@@ -10,7 +10,7 @@
 <section class="panel">
   <div class="section-title">
     <h2>Circuitos favoritos</h2>
-    <span>Guardados localmente nesta fase</span>
+    <span>Guardados no backend</span>
   </div>
 
   @if (f1Service.favorites().length) {
@@ -26,6 +26,27 @@
     <div class="empty-state compact-empty">
       <h2>Ainda nao guardaste circuitos.</h2>
       <a class="primary-button compact" routerLink="/dashboard">Explorar corridas</a>
+    </div>
+  }
+</section>
+
+<section class="panel">
+  <div class="section-title">
+    <h2>Equipa Fantasy</h2>
+    <span>Guardada no backend</span>
+  </div>
+
+  @if (f1Service.fantasyTeam(); as team) {
+    <div class="favorite-list">
+      <article class="favorite-item">
+        <strong>{{ team.drivers.length }} pilotos · {{ team.constructors.length }} construtores</strong>
+        <span>Orçamento usado: {{ team.budgetUsed }}M / {{ team.budgetLimit }}M</span>
+      </article>
+    </div>
+  } @else {
+    <div class="empty-state compact-empty">
+      <h2>Ainda nao guardaste uma equipa Fantasy.</h2>
+      <a class="primary-button compact" routerLink="/fantasy">Montar equipa</a>
     </div>
   }
 </section>

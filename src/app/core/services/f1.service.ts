@@ -11,16 +11,21 @@ import {
   JolpicaRaceDetail,
   JolpicaRaceResult,
   JolpicaRaceSummary,
+  SavedFantasyTeam,
 } from '../models/f1.models';
 
 const TOKEN_KEY = 'f1rm_token';
-const FANTASY_TEAM_KEY = 'f1rm_fantasy_team';
 const BACKEND_URL = 'http://localhost:3000/api';
 
 interface UserProfileResponse {
   user: AuthUser;
   favorites: FavoriteCircuit[];
+  fantasyTeam: SavedFantasyTeam | null;
   votes: DriverVote[];
+}
+
+interface FantasyTeamResponse {
+  team: SavedFantasyTeam | null;
 }
 
 @Injectable({
@@ -30,8 +35,10 @@ export class F1Service {
   private readonly http = inject(HttpClient);
   private readonly favoriteCircuits = signal<FavoriteCircuit[]>([]);
   private readonly driverVotes = signal<Record<string, string>>({});
+  private readonly fantasyTeamState = signal<SavedFantasyTeam | null>(null);
 
   readonly favorites = this.favoriteCircuits.asReadonly();
+  readonly fantasyTeam = this.fantasyTeamState.asReadonly();
   readonly votes = this.driverVotes.asReadonly();
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
 
@@ -82,26 +89,33 @@ export class F1Service {
     return of(this.fantasyConstructors);
   }
 
-  saveFantasyTeam(driverIds: string[], constructorIds: string[]): void {
-    localStorage.setItem(FANTASY_TEAM_KEY, JSON.stringify({ drivers: driverIds, constructors: constructorIds }));
+  saveFantasyTeam(
+    drivers: FantasyDriver[],
+    constructors: FantasyConstructor[],
+    budgetUsed: number,
+  ): Observable<FantasyTeamResponse> {
+    return this.http.put<FantasyTeamResponse>(
+      `${BACKEND_URL}/fantasy/team`,
+      {
+        drivers,
+        constructors,
+        budgetLimit: 100,
+        budgetUsed,
+      },
+      this.authOptions(),
+    ).pipe(tap((response) => this.fantasyTeamState.set(response.team)));
   }
 
-  loadFantasyTeam(): { drivers: string[]; constructors: string[] } {
-    const raw = localStorage.getItem(FANTASY_TEAM_KEY);
-    if (!raw) {
-      return { drivers: [], constructors: [] };
-    }
+  loadFantasyTeam(): Observable<FantasyTeamResponse> {
+    return this.http
+      .get<FantasyTeamResponse>(`${BACKEND_URL}/fantasy/team`, this.authOptions())
+      .pipe(tap((response) => this.fantasyTeamState.set(response.team)));
+  }
 
-    try {
-      const parsed = JSON.parse(raw) as { drivers?: string[]; constructors?: string[] };
-      return {
-        drivers: Array.isArray(parsed.drivers) ? parsed.drivers.filter((id) => typeof id === 'string') : [],
-        constructors: Array.isArray(parsed.constructors) ? parsed.constructors.filter((id) => typeof id === 'string') : [],
-      };
-    } catch {
-      localStorage.removeItem(FANTASY_TEAM_KEY);
-      return { drivers: [], constructors: [] };
-    }
+  deleteFantasyTeam(): Observable<void> {
+    return this.http
+      .delete<void>(`${BACKEND_URL}/fantasy/team`, this.authOptions())
+      .pipe(tap(() => this.fantasyTeamState.set(null)));
   }
 
   private fetchRaces(season: number): Observable<JolpicaRaceDetail[]> {
@@ -229,6 +243,7 @@ export class F1Service {
     return this.http.get<UserProfileResponse>(`${BACKEND_URL}/user/profile`, this.authOptions()).pipe(
       tap((profile) => {
         this.favoriteCircuits.set(profile.favorites);
+        this.fantasyTeamState.set(profile.fantasyTeam);
         this.driverVotes.set(
           profile.votes.reduce<Record<string, string>>((acc, vote) => {
             acc[this.voteKey(vote.raceSeason, vote.raceRound)] = vote.driverId;
@@ -252,17 +267,4 @@ export class F1Service {
     return `${season}-${round}`;
   }
 
-  private readJson<T>(key: string, fallback: T): T {
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      return fallback;
-    }
-
-    try {
-      return JSON.parse(raw) as T;
-    } catch {
-      localStorage.removeItem(key);
-      return fallback;
-    }
-  }
 }

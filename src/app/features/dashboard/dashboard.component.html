@@ -26,18 +26,46 @@
       <button class="secondary-button" (click)="showRaces()">Corridas</button>
     }
     <span class="stat-pill">
-      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prêmios' }}
+      {{ viewMode() === 'standings' ? 'Pilotos e construtores' : filteredRaces().length + ' Grandes Prémios' }}
     </span>
   </div>
 </section>
 
 @if (viewMode() === 'races') {
+  <section class="dashboard-summary">
+    <article>
+      <span>Corridas visíveis</span>
+      <strong>{{ filteredRaces().length }}</strong>
+      <small>{{ races().length }} no total</small>
+    </article>
+    <article>
+      <span>Concluídas</span>
+      <strong>{{ completedRaceCount() }}</strong>
+      <small>{{ upcomingRaceCount() }} por realizar</small>
+    </article>
+    <article>
+      <span>Países</span>
+      <strong>{{ visibleCountryCount() }}</strong>
+      <small>Calendário selecionado</small>
+    </article>
+    <article>
+      <span>Próxima corrida</span>
+      @if (nextRace(); as race) {
+        <strong>{{ race.raceName }}</strong>
+        <small>{{ race.date }} · {{ race.Circuit.Location.country }}</small>
+      } @else {
+        <strong>Sem próxima</strong>
+        <small>Temporada concluída</small>
+      }
+    </article>
+  </section>
+
   <section class="panel dashboard-filters">
     <label>
       <span>Pesquisar</span>
       <input
         type="search"
-        placeholder="Grande Prêmio, circuito, cidade ou país"
+        placeholder="Grande Prémio, circuito, cidade ou país"
         [ngModel]="searchTerm()"
         (ngModelChange)="searchTerm.set($event)"
       />
@@ -69,7 +97,7 @@
 @if (error()) {
   <section class="empty-state compact-empty">
     <h2>{{ error() }}</h2>
-    <p>Verifique se o servidor backend está rodando e se a temporada selecionada está disponível.</p>
+    <p>Verifica se o servidor backend está ativo e se a temporada selecionada está disponível.</p>
   </section>
 } @else if (isLoading()) {
   <section class="empty-state compact-empty">
@@ -126,7 +154,7 @@
         <h2>Classificação de pilotos</h2>
         <span>{{ standings.driverStandings.length }} pilotos</span>
       </div>
-      <div class="results-table">
+      <div class="results-table standings-table">
         <div class="table-row table-head">
           <span>Pos</span>
           <span>Piloto</span>
@@ -162,7 +190,7 @@
         <h2>Classificação de construtores</h2>
         <span>{{ standings.constructorStandings.length }} equipas</span>
       </div>
-      <div class="results-table">
+      <div class="results-table standings-table">
         <div class="table-row table-head">
           <span>Pos</span>
           <span>Construtor</span>

@@ -42,12 +42,15 @@ export class F1Service {
   private readonly http = inject(HttpClient);
   private readonly favoriteCircuits = signal<FavoriteCircuit[]>([]);
   private readonly driverVotes = signal<Record<string, string>>({});
+  private readonly voteListState = signal<DriverVote[]>([]);
   private readonly fantasyTeamState = signal<SavedFantasyTeam | null>(null);
 
   readonly favorites = this.favoriteCircuits.asReadonly();
   readonly fantasyTeam = this.fantasyTeamState.asReadonly();
   readonly votes = this.driverVotes.asReadonly();
+  readonly voteList = this.voteListState.asReadonly();
   readonly favoriteCount = computed(() => this.favoriteCircuits().length);
+  readonly voteCount = computed(() => this.voteListState().length);
 
   private readonly fantasyDrivers: FantasyDriver[] = [
     { id: 'russell', name: 'George Russell', price: 28.2, points: 157, team: 'Mercedes', initials: 'GR' },
@@ -258,6 +261,15 @@ export class F1Service {
           ...votes,
           [this.voteKey(saved.raceSeason, saved.raceRound)]: saved.driverId,
         }));
+        this.voteListState.update((votes) => {
+          const currentKey = this.voteKey(saved.raceSeason, saved.raceRound);
+          const withoutPreviousVote = votes.filter(
+            (vote) => this.voteKey(vote.raceSeason, vote.raceRound) !== currentKey,
+          );
+          return [saved, ...withoutPreviousVote].sort(
+            (a, b) => Number(b.raceSeason) - Number(a.raceSeason) || Number(a.raceRound) - Number(b.raceRound),
+          );
+        });
       },
     });
   }
@@ -283,11 +295,30 @@ export class F1Service {
     return this.driverVotes()[this.voteKey(race.season, race.round)];
   }
 
+  removeVote(race: JolpicaRaceDetail): Observable<void> {
+    const key = this.voteKey(race.season, race.round);
+    return this.http
+      .delete<void>(`${BACKEND_URL}/f1/vote/${race.season}/${race.round}`, this.authOptions())
+      .pipe(
+        tap(() => {
+          this.driverVotes.update((votes) => {
+            const updatedVotes = { ...votes };
+            delete updatedVotes[key];
+            return updatedVotes;
+          });
+          this.voteListState.update((votes) =>
+            votes.filter((vote) => this.voteKey(vote.raceSeason, vote.raceRound) !== key),
+          );
+        }),
+      );
+  }
+
   refreshProfile(): Observable<UserProfileResponse> {
     return this.http.get<UserProfileResponse>(`${BACKEND_URL}/user/profile`, this.authOptions()).pipe(
       tap((profile) => {
         this.favoriteCircuits.set(profile.favorites);
         this.fantasyTeamState.set(profile.fantasyTeam);
+        this.voteListState.set(profile.votes);
         this.driverVotes.set(
           profile.votes.reduce<Record<string, string>>((acc, vote) => {
             acc[this.voteKey(vote.raceSeason, vote.raceRound)] = vote.driverId;

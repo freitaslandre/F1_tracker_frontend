@@ -69,6 +69,14 @@ export class DashboardComponent {
       return matchesSearch && matchesStatus && matchesCountry;
     });
   });
+  protected readonly completedRaceCount = computed(() => this.races().filter((race) => this.isRaceCompleted(race)).length);
+  protected readonly upcomingRaceCount = computed(() => this.races().length - this.completedRaceCount());
+  protected readonly visibleCountryCount = computed(() => this.availableCountries().length);
+  protected readonly nextRace = computed(() =>
+    this.races()
+      .filter((race) => !this.isRaceCompleted(race))
+      .sort((a, b) => this.raceStartTime(a) - this.raceStartTime(b))[0] ?? null,
+  );
 
   constructor() {
     this.route.queryParamMap.subscribe((params) => {
@@ -163,6 +171,13 @@ export class DashboardComponent {
     } catch {
       return false;
     }
+  }
+
+  protected raceStartTime(race: JolpicaRaceSummary): number {
+    const date = race.date ?? '';
+    const time = race.time ?? '';
+    const parsed = time ? new Date(`${date}T${time}`).getTime() : new Date(date).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   protected wikipediaImageUrl(url: string | undefined): Observable<string | undefined> {

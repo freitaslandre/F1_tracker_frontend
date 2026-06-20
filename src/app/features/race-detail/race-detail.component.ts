@@ -42,12 +42,23 @@ export class RaceDetailComponent {
     return race ? this.f1Service.selectedDriverForRace(race) : undefined;
   });
 
+  protected readonly selectedDriverName = computed(() => {
+    const race = this.race();
+    const selectedDriverId = this.selectedDriverId();
+    if (!race || !selectedDriverId) {
+      return 'Ainda sem voto';
+    }
+
+    const result = race.Results?.find((item) => item.Driver.driverId === selectedDriverId);
+    return result ? `${result.Driver.givenName} ${result.Driver.familyName}` : selectedDriverId;
+  });
+
   protected vote(race: JolpicaRaceDetail, result: JolpicaRaceResult): void {
     this.f1Service.voteDriver(race, result);
   }
 
   protected removeVote(race: JolpicaRaceDetail): void {
-    this.f1Service.removeVote(race);
+    this.f1Service.removeVote(race).subscribe();
   }
 
   protected toggleFavorite(race: JolpicaRaceDetail): void {

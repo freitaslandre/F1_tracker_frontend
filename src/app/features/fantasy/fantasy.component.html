@@ -242,6 +242,11 @@
               {{ isDriverSelected(driver) ? 'Remover' : 'Adicionar' }}
             </button>
           </article>
+        } @empty {
+          <div class="market-empty">
+            <strong>Sem pilotos encontrados</strong>
+            <span>Experimenta pesquisar por outro nome ou equipa.</span>
+          </div>
         }
       } @else {
         @for (constructor of filteredConstructors(); track constructor.id) {
@@ -282,6 +287,11 @@
               {{ isConstructorSelected(constructor) ? 'Remover' : 'Adicionar' }}
             </button>
           </article>
+        } @empty {
+          <div class="market-empty">
+            <strong>Sem construtores encontrados</strong>
+            <span>Experimenta pesquisar por outra equipa ou nacionalidade.</span>
+          </div>
         }
       }
     </div>

@@ -32,6 +32,34 @@
 </section>
 
 @if (viewMode() === 'races') {
+  <section class="dashboard-summary">
+    <article>
+      <span>Corridas visíveis</span>
+      <strong>{{ filteredRaces().length }}</strong>
+      <small>{{ races().length }} no total</small>
+    </article>
+    <article>
+      <span>Concluídas</span>
+      <strong>{{ completedRaceCount() }}</strong>
+      <small>{{ upcomingRaceCount() }} por realizar</small>
+    </article>
+    <article>
+      <span>Países</span>
+      <strong>{{ visibleCountryCount() }}</strong>
+      <small>Calendário selecionado</small>
+    </article>
+    <article>
+      <span>Próxima corrida</span>
+      @if (nextRace(); as race) {
+        <strong>{{ race.raceName }}</strong>
+        <small>{{ race.date }} · {{ race.Circuit.Location.country }}</small>
+      } @else {
+        <strong>Sem próxima</strong>
+        <small>Temporada concluída</small>
+      }
+    </article>
+  </section>
+
   <section class="panel dashboard-filters">
     <label>
       <span>Pesquisar</span>
@@ -126,7 +154,7 @@
         <h2>Classificação de pilotos</h2>
         <span>{{ standings.driverStandings.length }} pilotos</span>
       </div>
-      <div class="results-table">
+      <div class="results-table standings-table">
         <div class="table-row table-head">
           <span>Pos</span>
           <span>Piloto</span>
@@ -162,7 +190,7 @@
         <h2>Classificação de construtores</h2>
         <span>{{ standings.constructorStandings.length }} equipas</span>
       </div>
-      <div class="results-table">
+      <div class="results-table standings-table">
         <div class="table-row table-head">
           <span>Pos</span>
           <span>Construtor</span>

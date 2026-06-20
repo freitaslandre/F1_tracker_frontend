@@ -133,6 +133,20 @@ main {
   cursor: pointer;
 }
 
+.text-button {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  color: var(--text);
+}
+
 .auth-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
@@ -241,6 +255,34 @@ input {
   color: var(--text);
 }
 
+.dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.dashboard-summary article {
+  display: grid;
+  gap: 8px;
+  min-height: 122px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(18, 23, 34, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.dashboard-summary span,
+.dashboard-summary small {
+  color: var(--muted);
+}
+
+.dashboard-summary strong {
+  overflow-wrap: anywhere;
+  font-size: 1.3rem;
+}
+
 .primary-button,
 .secondary-button,
 .vote-button {
@@ -278,18 +320,18 @@ input {
 
 .page-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem;
-  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
   margin-bottom: 28px;
 }
 
 .heading-actions {
   display: flex;
-  align-items: center;
+  align-items: end;
   flex-wrap: wrap;
   gap: 16px;
-  justify-content: end;
+  justify-content: start;
 }
 
 .season-picker {
@@ -300,12 +342,26 @@ input {
 }
 
 .season-picker select {
-  min-width: 144px;
+  min-height: 54px;
+  min-width: 170px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 18px;
   background: var(--surface);
   color: var(--text);
+}
+
+.heading-actions .secondary-button,
+.heading-actions .stat-pill {
+  min-height: 54px;
+  min-width: 170px;
+  border-radius: 999px;
+  padding-inline: 22px;
+  white-space: nowrap;
+}
+
+.heading-actions .stat-pill {
+  min-width: 250px;
 }
 
 .detail-heading {
@@ -421,6 +477,10 @@ input {
   gap: 5px;
 }
 
+.race-facts .text-button {
+  margin-top: 2px;
+}
+
 .panel {
   padding: 26px;
 }
@@ -448,6 +508,11 @@ input {
   min-width: 820px;
   padding: 16px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.standings-table .table-row {
+  grid-template-columns: 60px minmax(240px, 1.5fr) minmax(150px, 1fr) 90px 90px;
+  min-width: 760px;
 }
 
 .table-row:not(.table-head) {
@@ -614,6 +679,10 @@ input {
 
   .dashboard-filters {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .profile-stats {
@@ -1049,6 +1118,22 @@ input {
   color: #fca5a5;
 }
 
+.market-empty {
+  display: grid;
+  gap: 6px;
+  min-height: 120px;
+  place-items: center;
+  padding: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.market-empty strong {
+  color: var(--text);
+}
+
 .fantasy-insights {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1129,6 +1214,10 @@ input {
 
   .market-action {
     grid-column: 1 / -1;
+  }
+
+  .dashboard-summary {
+    grid-template-columns: 1fr;
   }
 
   .profile-stats {

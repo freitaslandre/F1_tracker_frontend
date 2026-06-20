@@ -23,7 +23,10 @@
     </div>
     <div>
       <span>Voto atual</span>
-      <strong>{{ selectedDriverId() ?? 'Ainda sem voto' }}</strong>
+      <strong>{{ selectedDriverName() }}</strong>
+      @if (selectedDriverId()) {
+        <button class="text-button" type="button" (click)="removeVote(race)">Apagar voto</button>
+      }
     </div>
   </section>
 
@@ -75,7 +78,7 @@
               [class.active]="selectedDriverId() === result.Driver.driverId"
               (click)="vote(race, result)"
             >
-              {{ selectedDriverId() === result.Driver.driverId ? 'Escolhido' : 'Votar' }}
+              {{ selectedDriverId() === result.Driver.driverId ? 'Votado' : 'Votar' }}
             </button>
           </span>
         </div>

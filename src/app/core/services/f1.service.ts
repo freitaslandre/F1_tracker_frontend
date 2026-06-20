@@ -278,6 +278,24 @@ export class F1Service {
     return this.driverVotes()[this.voteKey(race.season, race.round)];
   }
 
+  removeVote(race: JolpicaRaceDetail): Observable<void> {
+    const key = this.voteKey(race.season, race.round);
+    return this.http
+      .delete<void>(`${BACKEND_URL}/f1/vote/${race.season}/${race.round}`, this.authOptions())
+      .pipe(
+        tap(() => {
+          this.driverVotes.update((votes) => {
+            const updatedVotes = { ...votes };
+            delete updatedVotes[key];
+            return updatedVotes;
+          });
+          this.voteListState.update((votes) =>
+            votes.filter((vote) => this.voteKey(vote.raceSeason, vote.raceRound) !== key),
+          );
+        }),
+      );
+  }
+
   refreshProfile(): Observable<UserProfileResponse> {
     return this.http.get<UserProfileResponse>(`${BACKEND_URL}/user/profile`, this.authOptions()).pipe(
       tap((profile) => {

@@ -1,7 +1,7 @@
 # F1 Tracker Frontend
 
 Frontend Angular do projeto F1 Tracker, uma aplicacao web para consultar informacao de Formula 1, acompanhar corridas por epoca, ver detalhes de cada Grande Premio, guardar circuitos favoritos, votar no Piloto do Dia e gerir uma equipa Fantasy F1 pessoal.
-
+Frontend: https://f1-race-manager.web.app
 ## Tecnologias
 
 - Angular 21

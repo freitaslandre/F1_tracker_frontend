@@ -71,6 +71,8 @@ npm run grade
 - `quality`: executa validacao, lint, testes e build.
 - `grade`: gera a avaliacao automatica do template.
 
+No Windows, o npm run grade original da template pode dar falso por erro ao chamar npm.cmd; os comandos individuais passam.
+
 ## Paginas principais
 
 - `/auth`: registo e login.

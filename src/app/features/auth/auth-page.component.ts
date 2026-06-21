@@ -14,8 +14,8 @@ export class AuthPageComponent {
 
   protected readonly mode = signal<'login' | 'register'>('login');
   protected name = '';
-  protected email = 'demo@f1manager.test';
-  protected password = 'password123';
+  protected email = '';
+  protected password = '';
   protected readonly error = signal<string | null>(null);
   protected readonly isSubmitting = signal(false);
 

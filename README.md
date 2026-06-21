@@ -1,78 +1,104 @@
-# Web Technologies Final Project (Frontend)
+# F1 Tracker Frontend
 
-This repository is the official Angular frontend template for the final project.
-Focus on building your application features. The project already includes automated checks for structure, linting, tests, and build.
+Frontend Angular do projeto F1 Tracker, uma aplicacao web para consultar informacao de Formula 1, acompanhar corridas por epoca, ver detalhes de cada Grande Premio, guardar circuitos favoritos, votar no Piloto do Dia e gerir uma equipa Fantasy F1 pessoal.
 
-## Install dependencies
+## Tecnologias
+
+- Angular 21
+- TypeScript
+- Angular Router
+- Angular HttpClient
+- RxJS
+- CSS
+
+## Funcionalidades
+
+- Registo, login, validacao de sessao e logout.
+- Dashboard com corridas de Formula 1 por epoca.
+- Pagina de detalhe de corrida com resultados e informacao do circuito.
+- Voto pessoal no Piloto do Dia.
+- Gestao de circuitos favoritos.
+- Perfil do utilizador com favoritos, votos e equipa fantasy guardada.
+- Area Fantasy F1 para escolher 5 pilotos e 2 construtores dentro de um limite de orcamento.
+- Leaderboard fantasy e pontuacao de corridas.
+
+## Ligacao ao backend
+
+O frontend usa o backend configurado em `src/app/core/config/api.config.ts`:
+
+- Em desenvolvimento: `http://localhost:3000/api`
+- Em producao: `https://f1-tracker-backend-ahni.onrender.com/api`
+
+As chamadas de autenticacao usam cookies HTTP com `withCredentials: true`, por isso o backend deve permitir a origem do frontend em `FRONTEND_URL`.
+
+## Instalar dependencias
 
 ```bash
 npm install
 ```
 
-## Run the project locally
+## Executar localmente
 
 ```bash
 npm start
 ```
 
-Open `http://localhost:4200/` in your browser.
+Depois abrir:
 
-## Quality checks (local)
-
-Run all checks:
-
-```bash
-npm run quality
+```text
+http://localhost:4200
 ```
 
-Teacher grading (score + report):
+Para a aplicacao funcionar por completo, o backend deve estar ativo em `http://localhost:3000`.
+
+## Scripts disponiveis
 
 ```bash
+npm start
+npm run build
+npm run lint
+npm run test:ci
+npm run validate
+npm run quality
 npm run grade
 ```
 
-Run individual checks:
+- `start`: arranca o servidor Angular de desenvolvimento.
+- `build`: gera a build de producao.
+- `lint`: valida qualidade de codigo com ESLint.
+- `test:ci`: executa testes unitarios em Chrome Headless.
+- `validate`: verifica a estrutura minima exigida pelo projeto.
+- `quality`: executa validacao, lint, testes e build.
+- `grade`: gera a avaliacao automatica do template.
 
-```bash
-npm run validate
-npm run lint
-npm run test:ci
-npm run build
+## Paginas principais
+
+- `/auth`: registo e login.
+- `/dashboard`: lista e resumo de corridas.
+- `/races/:season/:round`: detalhe de uma corrida.
+- `/fantasy`: criacao e gestao da equipa Fantasy F1.
+- `/profile`: dados do utilizador, favoritos, votos e equipa guardada.
+
+## Estrutura principal
+
+```text
+src/app/
++-- core/
+|   +-- config/       # configuracao da API
+|   +-- guards/       # protecao de rotas
+|   +-- models/       # interfaces TypeScript
+|   +-- services/     # servicos de autenticacao e Formula 1
++-- features/
+|   +-- auth/
+|   +-- dashboard/
+|   +-- fantasy/
+|   +-- profile/
+|   +-- race-detail/
++-- shared/
 ```
 
-What each check does:
+## Notas
 
-- `validate`: ensures the minimum required project structure exists.
-- `lint`: runs Angular ESLint to enforce basic code quality.
-- `test:ci`: runs unit tests once in a headless browser (CI friendly).
-- `build`: builds the Angular app to verify it compiles.
-
-## Files and folders students should not edit
-
-Do not edit:
-
-- .github/workflows/\*\*
-- scripts/\*\*
-- angular.json
-- package.json
-- package-lock.json
-- eslint.config.\*
-- tsconfig\*.json
-
-You can edit:
-
-- src/app/features/\*\*
-- src/app/shared/\*\*
-- src/app/core/services/\*\*
-- src/app/core/models/\*\*
-- PROJECT_INFO.md
-- README.md (only the project-specific sections)
-
-## Project-specific sections to complete
-
-- Fill in [PROJECT_INFO.md](PROJECT_INFO.md) with your group and project details.
-- Add any project notes in this README below.
-
-### Project Notes
-
-Add your project-specific notes here.
+- As rotas principais estao protegidas pelo `authGuard`.
+- A sessao e validada atraves de `GET /api/auth/me`.
+- Os dados de corridas e classificacoes sao obtidos pelo backend atraves do Actor Jolpica F1 Results Scraper na Apify.

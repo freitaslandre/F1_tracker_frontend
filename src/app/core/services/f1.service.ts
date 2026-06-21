@@ -16,9 +16,7 @@ import {
   SavedFantasyTeam,
   SeasonStandings,
 } from '../models/f1.models';
-
-const BACKEND_URL = 'http://localhost:3000/api';
-const CREDENTIAL_OPTIONS = { withCredentials: true };
+import { BACKEND_URL, HTTP_OPTIONS } from '../config/api.config';
 
 interface UserProfileResponse {
   user: AuthUser;
@@ -313,7 +311,7 @@ export class F1Service {
   }
 
   private authOptions(): { withCredentials: boolean } {
-    return CREDENTIAL_OPTIONS;
+    return HTTP_OPTIONS;
   }
 
   private voteKey(season: string, round: string): string {

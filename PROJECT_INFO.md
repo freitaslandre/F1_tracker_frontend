@@ -2,9 +2,9 @@
 
 ## Group Members
 
-- Student 1:
-- Student 2:
-- Student 3:
+- Student 1: Afonso Neiva
+- Student 2: André Freitas
+- Student 3: Diogo Viana
 
 ## Project Theme
 
